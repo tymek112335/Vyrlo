@@ -1,0 +1,603 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Vyrlo — client reports, finally beautiful</title>
+
+</head>
+
+<body>
+
+<style>
+
+  :root{
+
+    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+
+    --serif:"Charter","Iowan Old Style","Palatino Linotype",Palatino,Georgia,ui-serif,serif;
+
+    --canvas:#EBEDF2;
+
+    --panel:#FFFFFF;
+
+    --paper:#FFFFFF;
+
+    --ink:#15161C;
+
+    --ink-soft:#5D616F;
+
+    --ink-faint:#9AA0AD;
+
+    --line:#E4E6EC;
+
+    --field:#F5F6F9;
+
+    --accent:#2D4EFF;
+
+    --accent-contrast:#FFFFFF;
+
+    --up:#0E8F5D;
+
+    --down:#C63B57;
+
+    --shadow:0 1px 2px rgba(20,22,35,.06),0 18px 44px -18px rgba(20,22,35,.22);
+
+    --brand:#0E9F6E; /* report accent, user-controlled */
+
+  }
+
+  @media (prefers-color-scheme:dark){
+
+    :root{
+
+      --canvas:#0B0C10;--panel:#14151B;--paper:#16171F;--ink:#ECEEF3;--ink-soft:#9CA1AE;
+
+      --ink-faint:#6C7280;--line:#262833;--field:#1D1E26;--accent:#5D77FF;--accent-contrast:#0B0C10;
+
+      --up:#34C289;--down:#F26F88;--shadow:0 1px 2px rgba(0,0,0,.4),0 24px 50px -20px rgba(0,0,0,.6);
+
+    }
+
+  }
+
+  :root[data-theme="dark"]{
+
+    --canvas:#0B0C10;--panel:#14151B;--paper:#16171F;--ink:#ECEEF3;--ink-soft:#9CA1AE;
+
+    --ink-faint:#6C7280;--line:#262833;--field:#1D1E26;--accent:#5D77FF;--accent-contrast:#0B0C10;
+
+    --up:#34C289;--down:#F26F88;--shadow:0 1px 2px rgba(0,0,0,.4),0 24px 50px -20px rgba(0,0,0,.6);
+
+  }
+
+  :root[data-theme="light"]{
+
+    --canvas:#EBEDF2;--panel:#FFFFFF;--paper:#FFFFFF;--ink:#15161C;--ink-soft:#5D616F;
+
+    --ink-faint:#9AA0AD;--line:#E4E6EC;--field:#F5F6F9;--accent:#2D4EFF;--accent-contrast:#FFFFFF;
+
+    --up:#0E8F5D;--down:#C63B57;--shadow:0 1px 2px rgba(20,22,35,.06),0 18px 44px -18px rgba(20,22,35,.22);
+
+  }
+
+  *{box-sizing:border-box}
+
+  html,body{margin:0;height:100%}
+
+  body{font-family:var(--sans);color:var(--ink);background:var(--canvas);-webkit-font-smoothing:antialiased}
+
+  input,textarea,button{font-family:inherit}
+
+  .app{height:100vh;display:grid;grid-template-columns:400px 1fr;grid-template-rows:auto 1fr}
+
+  .topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
+
+    padding:14px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+
+  .brand{display:flex;align-items:center;gap:10px}
+
+  .logo{width:26px;height:26px;border-radius:7px;background:var(--accent);color:var(--accent-contrast);
+
+    display:grid;place-items:center;font-weight:700;font-size:15px;letter-spacing:-.02em}
+
+  .wordmark{font-weight:650;font-size:17px;letter-spacing:-.02em}
+
+  .wordmark small{color:var(--ink-faint);font-weight:500;letter-spacing:0;margin-left:7px;font-size:12px}
+
+  .actions{display:flex;gap:8px}
+
+  button{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+
+    padding:8px 14px;border-radius:8px;font-size:13px;font-weight:550;transition:transform .08s ease,background .15s ease}
+
+  button:hover{background:var(--field)}
+
+  button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+
+  button.primary:hover{filter:brightness(1.06)}
+
+  button:active{transform:translateY(1px)}
+
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .builder{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:22px 20px 60px}
+
+  .group{margin-bottom:26px}
+
+  .group>h2{margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--ink-faint)}
+
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+
+  .field>label{font-size:12px;font-weight:550;color:var(--ink-soft)}
+
+  input[type=text],input[type=number],textarea{
+
+    width:100%;background:var(--field);border:1px solid var(--line);border-radius:8px;
+
+    padding:9px 11px;font-size:13.5px;color:var(--ink)}
+
+  textarea{resize:vertical;min-height:82px;line-height:1.5}
+
+  .row{display:grid;gap:8px}
+
+  .row.m{grid-template-columns:1fr}
+
+  .m-inputs{display:grid;grid-template-columns:1fr 74px 74px;gap:8px;margin-bottom:9px}
+
+  .m-inputs input{font-size:12.5px;padding:8px 9px}
+
+  .trend-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+
+  .trend-row input{padding:8px 4px;text-align:center;font-size:12.5px;font-variant-numeric:tabular-nums}
+
+  .swatches{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+
+  .swatch{width:24px;height:24px;border-radius:50%;border:2px solid var(--panel);
+
+    box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+
+  .swatch:hover{transform:scale(1.12)}
+
+  input[type=color]{width:36px;height:26px;padding:0;border:1px solid var(--line);border-radius:7px;background:none;cursor:pointer}
+
+  .hint{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+
+  .stage{overflow-y:auto;background:var(--canvas);padding:34px 30px 60px;display:flex;justify-content:center;align-items:flex-start}
+
+  .sheet{width:100%;max-width:660px;background:var(--paper);border:1px solid var(--line);
+
+    border-radius:14px;box-shadow:var(--shadow);padding:44px 46px}
+
+  .r-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;
+
+    padding-bottom:22px;border-bottom:1px solid var(--line)}
+
+  .r-brandline{display:flex;align-items:center;gap:11px}
+
+  .r-mono{width:38px;height:38px;border-radius:10px;background:var(--brand);color:#fff;
+
+    display:grid;place-items:center;font-weight:700;font-size:16px;letter-spacing:-.02em}
+
+  .r-agency{font-weight:600;font-size:14px}
+
+  .r-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--brand)}
+
+  .r-headright{text-align:right}
+
+  .r-period{font-size:12.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+
+  .r-client{font-family:var(--serif);font-size:34px;line-height:1.05;letter-spacing:-.01em;margin:24px 0 4px;text-wrap:balance}
+
+  .r-sub{font-size:13px;color:var(--ink-soft);margin-bottom:26px}
+
+  .r-metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  .metric{border:1px solid var(--line);border-radius:11px;padding:15px 16px;background:var(--paper)}
+
+  .m-label{font-size:10.5px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint)}
+
+  .m-value{font-size:29px;font-weight:660;letter-spacing:-.02em;margin:7px 0 8px;font-variant-numeric:tabular-nums}
+
+  .delta{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;
+
+    padding:3px 8px;border-radius:20px;font-variant-numeric:tabular-nums}
+
+  .delta.up{color:var(--up);background:color-mix(in srgb,var(--up) 13%,transparent)}
+
+  .delta.down{color:var(--down);background:color-mix(in srgb,var(--down) 13%,transparent)}
+
+  .delta .arw{font-size:9px}
+
+  .r-section-label{font-size:10.5px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--ink-faint);margin:30px 0 12px}
+
+  .chart-wrap{border:1px solid var(--line);border-radius:11px;padding:18px 18px 12px}
+
+  #r-chart svg{display:block;width:100%;height:auto}
+
+  .months{display:flex;justify-content:space-between;margin-top:8px;padding:0 2px}
+
+  .months span{font-size:10.5px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+
+  .r-note{margin-top:28px;padding:18px 20px;background:var(--field);border-radius:11px;
+
+    border-left:3px solid var(--brand)}
+
+  .r-note p{margin:0;font-family:var(--serif);font-size:15px;line-height:1.6;color:var(--ink)}
+
+  .r-foot{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);
+
+    display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-faint)}
+
+  @media (max-width:980px){
+
+    .app{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;height:auto;min-height:100vh}
+
+    .builder{border-right:none;border-bottom:1px solid var(--line)}
+
+    .stage{padding:22px 16px 50px}
+
+    .sheet{padding:30px 24px;max-width:none}
+
+    .r-client{font-size:28px}
+
+  }
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  @media print{
+
+    .topbar,.builder{display:none!important}
+
+    .app{display:block;height:auto}
+
+    .stage{overflow:visible;padding:0;display:block}
+
+    .sheet{max-width:none;border:none;box-shadow:none;border-radius:0;padding:0}
+
+    body{background:#fff}
+
+  }
+
+</style>
+
+<div class="app">
+
+  <header class="topbar">
+
+    <div class="brand">
+
+      <div class="logo">V</div>
+
+      <div class="wordmark">Vyrlo<small>client reports, finally beautiful</small></div>
+
+    </div>
+
+    <div class="actions">
+
+      <button id="btn-print" class="primary">Download PDF</button>
+
+    </div>
+
+  </header>
+
+  <aside class="builder">
+
+    <div class="group">
+
+      <h2>Brand</h2>
+
+      <div class="field"><label for="f-agency">Your agency</label><input type="text" id="f-agency" value="Northbeam Studio"></div>
+
+      <div class="field"><label for="f-client">Client</label><input type="text" id="f-client" value="Loom &amp; Co."></div>
+
+      <div class="field"><label for="f-period">Reporting period</label><input type="text" id="f-period" value="March 2026"></div>
+
+      <div class="field">
+
+        <label for="f-brandcolor">Client accent</label>
+
+        <div class="swatches">
+
+          <input type="color" id="f-brandcolor" value="#0E9F6E">
+
+          <button class="swatch" data-c="#0E9F6E" style="background:#0E9F6E" title="Green" aria-label="Green"></button>
+
+          <button class="swatch" data-c="#2D4EFF" style="background:#2D4EFF" title="Cobalt" aria-label="Cobalt"></button>
+
+          <button class="swatch" data-c="#6D4AE6" style="background:#6D4AE6" title="Violet" aria-label="Violet"></button>
+
+          <button class="swatch" data-c="#E4572E" style="background:#E4572E" title="Coral" aria-label="Coral"></button>
+
+          <button class="swatch" data-c="#111318" style="background:#111318" title="Ink" aria-label="Ink"></button>
+
+        </div>
+
+        <div class="hint">The monogram, chart and highlights pick this up.</div>
+
+      </div>
+
+    </div>
+
+    <div class="group">
+
+      <h2>Highlights</h2>
+
+      <div class="row m" id="metric-inputs"></div>
+
+      <div class="hint">Label · value · change vs. last month (use +/− for the arrow).</div>
+
+    </div>
+
+    <div class="group">
+
+      <h2>Trend</h2>
+
+      <div class="field"><label for="f-trendtitle">Chart title</label><input type="text" id="f-trendtitle" value="Qualified leads, last 6 months"></div>
+
+      <div class="trend-row" id="trend-inputs"></div>
+
+      <div class="hint">Oct · Nov · Dec · Jan · Feb · Mar</div>
+
+    </div>
+
+    <div class="group">
+
+      <h2>Summary note</h2>
+
+      <div class="field"><textarea id="f-summary">March was your strongest month yet. Paid social drove the jump in qualified leads (+27%), and the rebuilt landing page lifted conversion to 4.8%. Next month we scale the top-performing ad set and test two new hooks.</textarea></div>
+
+    </div>
+
+  </aside>
+
+  <main class="stage">
+
+    <article class="sheet" id="report">
+
+      <div class="r-head">
+
+        <div class="r-brandline">
+
+          <div class="r-mono" id="r-mono">NS</div>
+
+          <div>
+
+            <div class="r-eyebrow">Performance report</div>
+
+            <div class="r-agency" id="r-agency">Northbeam Studio</div>
+
+          </div>
+
+        </div>
+
+        <div class="r-headright">
+
+          <div class="r-period" id="r-period">March 2026</div>
+
+        </div>
+
+      </div>
+
+      <h1 class="r-client" id="r-client">Loom &amp; Co.</h1>
+
+      <div class="r-sub" id="r-sub">Prepared for Loom &amp; Co. · March 2026</div>
+
+      <div class="r-metrics" id="r-metrics"></div>
+
+      <div class="r-section-label" id="r-trendtitle">Qualified leads, last 6 months</div>
+
+      <div class="chart-wrap">
+
+        <div id="r-chart"></div>
+
+        <div class="months"><span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span></div>
+
+      </div>
+
+      <div class="r-note"><p id="r-summary"></p></div>
+
+      <div class="r-foot">
+
+        <span id="r-foot-left">Prepared by Northbeam Studio</span>
+
+        <span>Generated with Vyrlo</span>
+
+      </div>
+
+    </article>
+
+  </main>
+
+</div>
+
+<script>
+
+  var METRICS=[
+
+    {label:"Website visitors",value:"48,320",delta:"+18%"},
+
+    {label:"Qualified leads",value:"512",delta:"+27%"},
+
+    {label:"Conversion rate",value:"4.8%",delta:"+0.6pt"},
+
+    {label:"Return on ad spend",value:"3.2x",delta:"+0.4x"}
+
+  ];
+
+  var TREND=[210,265,240,330,420,512];
+
+  var mi=document.getElementById('metric-inputs');
+
+  METRICS.forEach(function(m,i){
+
+    var row=document.createElement('div');row.className='m-inputs';
+
+    row.innerHTML='<input type="text" data-k="label" data-i="'+i+'" placeholder="Label">'
+
+      +'<input type="text" data-k="value" data-i="'+i+'" placeholder="Value">'
+
+      +'<input type="text" data-k="delta" data-i="'+i+'" placeholder="+0%">';
+
+    mi.appendChild(row);
+
+    row.children[0].value=m.label;row.children[1].value=m.value;row.children[2].value=m.delta;
+
+  });
+
+  var ti=document.getElementById('trend-inputs');
+
+  TREND.forEach(function(v,i){
+
+    var inp=document.createElement('input');inp.type='number';inp.dataset.t=i;inp.value=v;
+
+    ti.appendChild(inp);
+
+  });
+
+  function initials(name){
+
+    var parts=name.trim().split(/\s+/).filter(Boolean);
+
+    if(!parts.length) return "–";
+
+    if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
+
+    return (parts[0][0]+parts[1][0]).toUpperCase();
+
+  }
+
+  function renderChart(vals,color){
+
+    var W=600,H=150,pl=6,pr=6,pt=14,pb=10;
+
+    var iw=W-pl-pr,ih=H-pt-pb;
+
+    var min=Math.min.apply(null,vals),max=Math.max.apply(null,vals);
+
+    var range=(max-min)||1; var lo=min-range*0.18, hi=max+range*0.12; var span=hi-lo;
+
+    var pts=vals.map(function(v,i){
+
+      var x=pl+(i/(vals.length-1))*iw;
+
+      var y=pt+ih-((v-lo)/span)*ih;
+
+      return [x,y];
+
+    });
+
+    var line=pts.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)}).join(' ');
+
+    var area=line+' L'+pts[pts.length-1][0].toFixed(1)+' '+(pt+ih)+' L'+pts[0][0].toFixed(1)+' '+(pt+ih)+' Z';
+
+    var grid='';
+
+    for(var g=0;g<3;g++){var gy=pt+(ih/2)*g;grid+='<line x1="0" y1="'+gy.toFixed(1)+'" x2="'+W+'" y2="'+gy.toFixed(1)+'" stroke="var(--line)" stroke-width="1"/>';}
+
+    var last=pts[pts.length-1];
+
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Trend chart">'
+
+      +grid
+
+      +'<path d="'+area+'" fill="'+color+'" fill-opacity="0.10"/>'
+
+      +'<path d="'+line+'" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
+
+      +'<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="4.5" fill="'+color+'"/>'
+
+      +'<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="8" fill="'+color+'" fill-opacity="0.18"/>'
+
+      +'</svg>';
+
+    document.getElementById('r-chart').innerHTML=svg;
+
+  }
+
+  function render(){
+
+    var agency=document.getElementById('f-agency').value||"Your agency";
+
+    var client=document.getElementById('f-client').value||"Client";
+
+    var period=document.getElementById('f-period').value||"";
+
+    var color=document.getElementById('f-brandcolor').value;
+
+    var report=document.getElementById('report');
+
+    report.style.setProperty('--brand',color);
+
+    document.getElementById('r-mono').textContent=initials(agency);
+
+    document.getElementById('r-agency').textContent=agency;
+
+    document.getElementById('r-client').textContent=client;
+
+    document.getElementById('r-period').textContent=period;
+
+    document.getElementById('r-sub').textContent="Prepared for "+client+(period?" · "+period:"");
+
+    document.getElementById('r-foot-left').textContent="Prepared by "+agency;
+
+    document.getElementById('r-trendtitle').textContent=document.getElementById('f-trendtitle').value;
+
+    document.getElementById('r-summary').textContent=document.getElementById('f-summary').value;
+
+    var wrap=document.getElementById('r-metrics');wrap.innerHTML='';
+
+    document.querySelectorAll('#metric-inputs .m-inputs').forEach(function(row){
+
+      var label=row.children[0].value, value=row.children[1].value, delta=row.children[2].value.trim();
+
+      var down=/^[-–−]/.test(delta);
+
+      var num=delta.replace(/^[-–−+]/,'');
+
+      var card=document.createElement('div');card.className='metric';
+
+      var d=document.createElement('div');
+
+      d.innerHTML='<div class="m-label"></div><div class="m-value"></div>'
+
+        +'<span class="delta '+(down?'down':'up')+'"><span class="arw">'+(down?'▼':'▲')+'</span><span class="dn"></span></span>';
+
+      d.querySelector('.m-label').textContent=label;
+
+      d.querySelector('.m-value').textContent=value;
+
+      d.querySelector('.dn').textContent=num;
+
+      card.appendChild(d);wrap.appendChild(card);
+
+    });
+
+    var vals=[];document.querySelectorAll('#trend-inputs input').forEach(function(i){vals.push(parseFloat(i.value)||0)});
+
+    renderChart(vals,color);
+
+  }
+
+  document.querySelector('.builder').addEventListener('input',render);
+
+  document.querySelectorAll('.swatch').forEach(function(b){
+
+    b.addEventListener('click',function(){document.getElementById('f-brandcolor').value=b.dataset.c;render();});
+
+  });
+
+  document.getElementById('btn-print').addEventListener('click',function(){window.print();});
+
+  render();
+
+</script>
+
+</body>
+
+</html>
