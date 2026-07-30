@@ -1,77 +1,110 @@
 // Cloudflare Pages Function — POST /api/generate
-// Turns pasted raw data into a structured report via Claude.
-// Requires the ANTHROPIC_API_KEY environment variable (set it in the
-// Cloudflare Pages project → Settings → Environment variables).
+// Two modes on one endpoint:
+//   default → turns pasted/uploaded business data into a daily briefing
+//   {mode:"ask"} → answers a question about the current briefing, grounded in it
+// Requires the ANTHROPIC_API_KEY environment variable (Cloudflare → Settings →
+// Variables and Secrets → Production).
 
-const REPORT_SCHEMA = {
+const BRIEFING_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["summary", "metrics", "trend", "channels", "highlights", "recommendations"],
+  required: ["summary", "what_changed", "why", "risk", "opportunity", "recommendations"],
   properties: {
-    summary: { type: "string" },
-    metrics: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["label", "value", "delta", "positive"],
-        properties: {
-          label: { type: "string" },
-          value: { type: "string" },
-          delta: { type: "string" },     // e.g. "+27%", "-18%", "+0.4x"
-          positive: { type: "boolean" }  // is this change GOOD for the client?
-        }
-      }
-    },
-    trend: {
+    summary: {
       type: "object",
       additionalProperties: false,
-      required: ["label", "points"],
+      required: ["headline", "body", "health", "reading_time"],
       properties: {
-        label: { type: "string" },
-        points: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["label", "value"],
-            properties: {
-              label: { type: "string" },  // e.g. "Oct", "Nov"
-              value: { type: "number" }
-            }
-          }
-        }
+        headline: { type: "string" },              // one short line, e.g. "Yesterday was a strong day."
+        body: { type: "string" },                   // one plain-language paragraph
+        health: { type: "string", enum: ["good", "watch", "at_risk"] },
+        reading_time: { type: "string" }            // e.g. "1 minute"
       }
     },
-    channels: {
+    what_changed: {
       type: "array",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "value", "share"],
+        required: ["metric", "direction", "value", "positive", "explanation", "detail"],
         properties: {
-          name: { type: "string" },
-          value: { type: "string" },   // e.g. "228 leads"
-          share: { type: "number" }    // 0-100
+          metric: { type: "string" },              // "Revenue", "Profit margin", "AOV"
+          direction: { type: "string", enum: ["up", "down", "flat"] },
+          value: { type: "string" },               // short display delta: "+14%", "-3%", "$68"
+          positive: { type: "boolean" },           // is this change GOOD for the business?
+          explanation: { type: "string" },         // one line
+          detail: { type: "string" }               // 2-3 sentences shown when the card is expanded
         }
       }
     },
-    highlights: { type: "array", items: { type: "string" } },
-    recommendations: { type: "array", items: { type: "string" } }
+    why: {
+      type: "object",
+      additionalProperties: false,
+      required: ["question", "reasons", "confidence", "reasoning"],
+      properties: {
+        question: { type: "string" },              // "Why did revenue increase?"
+        reasons: { type: "array", items: { type: "string" } }, // 2-3, each grounded in the data
+        confidence: { type: "string", enum: ["high", "medium", "low"] },
+        reasoning: { type: "string" }              // how the conclusion was reached AND what the data can't show
+      }
+    },
+    risk: {
+      type: "object",
+      additionalProperties: false,
+      required: ["title", "detail", "action"],
+      properties: {
+        title: { type: "string" },
+        detail: { type: "string" },
+        action: { type: "string" }                 // suggested next step (or "" if none warranted)
+      }
+    },
+    opportunity: {
+      type: "object",
+      additionalProperties: false,
+      required: ["title", "detail", "recommendation", "impact"],
+      properties: {
+        title: { type: "string" },
+        detail: { type: "string" },
+        recommendation: { type: "string" },
+        impact: { type: "string" }                 // plain-language potential impact
+      }
+    },
+    recommendations: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "reason", "effort"],
+        properties: {
+          title: { type: "string" },               // a concrete action
+          reason: { type: "string" },              // why, tied to a number
+          effort: { type: "string" }               // "5 min", "15 min", etc.
+        }
+      }
+    }
   }
 };
 
-const SYSTEM = `You are a senior marketing-agency analyst writing a monthly client report.
-You receive whatever the agency pastes — analytics numbers, ad-platform exports, or a plain-language description. Turn it into a polished, ROI-led report.
+const BRIEFING_SYSTEM = `You are a business analyst writing a short daily briefing for the owner of a small e-commerce business. You receive a dump of their business data — a CSV export, pasted numbers, or a plain-language description. Turn it into a briefing they can read in two minutes: what changed, why, one risk, one opportunity, and the few actions worth taking.
 
-Rules:
-- Executive summary: 2-4 sentences, lead with the business outcome (revenue, pipeline, or ROI), and use <b>...</b> around the 1-2 most important figures. No fluff.
-- Metrics: pick the 4-6 most important. Keep values as short display strings with units ("$14.20", "4.8%", "3.2x"). "delta" is the change vs. prior period with a sign. "positive" = whether that change is GOOD for the client (a FALLING cost-per-lead is positive:true).
-- Trend: choose the single most important metric to chart over time. If the data has a time series, use it. If not, build a plausible 6-point monthly trajectory consistent with the stated result, ending on the current value.
-- Channels: break results down by source/channel if the data implies any; estimate shares (summing to ~100). Omit with an empty array only if truly impossible.
-- Highlights: 2-3 concrete things that worked, tied to the numbers.
-- Recommendations: 2-3 specific, actionable next steps.
-- Ground everything in the numbers provided; do not invent wildly different figures. Professional, confident, not corporate-stiff.`;
+TRUTHFULNESS — this is the whole product; a single made-up claim destroys trust:
+- State only what the data actually supports. NEVER invent a cause you cannot see in the data.
+- If a metric changed and the data has breakdowns (by product, customer type, order value, channel), explain the change through those breakdowns. If the data is just totals with no breakdown, say the change happened but that the data doesn't reveal why — and set why.confidence to "low".
+- Do NOT reference website traffic, ad campaigns, email sends, discounts, or seasonality unless those figures are actually present in the data. If they aren't in the data, you cannot claim them as causes.
+- why.confidence: "high" = the explanation is clearly decomposable from the numbers provided; "medium" = a reasonable inference; "low" = the data is too thin to really explain it.
+- why.reasoning: briefly say what you compared to reach the conclusion, AND state plainly what the data does NOT let you see (e.g. "This export has no traffic or ad data, so the reason for the visit drop can't be confirmed here.").
+- The risk and opportunity must be grounded in the uploaded data. An inventory-runout risk needs stock levels; a cross-sell opportunity needs order/line-item detail. If the data can't support a genuine risk or opportunity, say so plainly in the title/detail rather than inventing one.
+- Ground every figure in what was provided. Do not fabricate numbers.
+
+STYLE:
+- summary.headline: one short, human line ("Yesterday was a strong day.", "A quieter day, with one thing to watch.").
+- summary.body: ONE plain paragraph, no jargon, lead with the business outcome.
+- summary.health: "good" when mostly positive with no pressing problem; "watch" when mixed; "at_risk" when there's a real problem.
+- what_changed: the 4-6 most important metrics. value is a short display delta with units. positive = whether that change is good for the business (a FALLING cost is positive:true).
+- recommendations: 2-3 concrete, specific next steps with a realistic effort estimate. No vague advice.
+- Calm, direct, non-technical throughout.`;
+
+const ASK_SYSTEM = `You are the analyst behind a business owner's daily briefing. Answer their follow-up question using ONLY the briefing and the underlying data provided. Be direct and plain-language, 1-3 short sentences. If the data doesn't contain what's needed to answer, say so honestly rather than guessing — do not invent numbers or causes.`;
 
 function json(obj, status) {
   return new Response(JSON.stringify(obj), {
@@ -80,60 +113,79 @@ function json(obj, status) {
   });
 }
 
+async function callClaude(env, { system, userMsg, schema }) {
+  const body = {
+    model: "claude-opus-5",
+    max_tokens: 4000,
+    system,
+    output_config: { effort: "medium" },
+    messages: [{ role: "user", content: userMsg }]
+  };
+  if (schema) body.output_config.format = { type: "json_schema", schema };
+
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!resp.ok) {
+    const detail = await resp.text();
+    return { error: json({ error: "Analysis engine error.", detail }, 502) };
+  }
+  const data = await resp.json();
+  if (data.stop_reason === "refusal") {
+    return { error: json({ error: "Couldn't process that input — try rephrasing the data." }, 422) };
+  }
+  // Skip thinking blocks; take the text block.
+  const textBlock = (data.content || []).find((b) => b.type === "text");
+  if (!textBlock) return { error: json({ error: "Empty response from the engine." }, 502) };
+  return { text: textBlock.text };
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   try {
-    const body = await request.json().catch(() => ({}));
-    const rawText = (body.rawText || "").trim();
-    const client = body.client || "Client";
-    const period = body.period || "";
-    const agency = body.agency || "Your agency";
-    const accent = body.accent || "#5A4BE8";
-
-    if (!rawText) return json({ error: "Paste some data first." }, 400);
+    const reqBody = await request.json().catch(() => ({}));
     if (!env.ANTHROPIC_API_KEY) return json({ error: "Server is missing its API key." }, 500);
 
+    // ---- Ask AI mode -------------------------------------------------------
+    if (reqBody.mode === "ask") {
+      const question = (reqBody.question || "").trim();
+      const briefing = reqBody.briefing || {};
+      const rawText = (reqBody.rawText || "").trim();
+      if (!question) return json({ error: "Ask a question first." }, 400);
+
+      const userMsg =
+        `Today's briefing (JSON):\n"""\n${JSON.stringify(briefing)}\n"""\n\n` +
+        (rawText ? `The underlying data the briefing was built from:\n"""\n${rawText}\n"""\n\n` : "") +
+        `The owner asks: ${question}\n\nAnswer using only the above.`;
+
+      const out = await callClaude(env, { system: ASK_SYSTEM, userMsg });
+      if (out.error) return out.error;
+      return json({ answer: out.text.trim() }, 200);
+    }
+
+    // ---- Briefing mode -----------------------------------------------------
+    const rawText = (reqBody.rawText || "").trim();
+    const period = reqBody.period || "";
+    if (!rawText) return json({ error: "Add some data first." }, 400);
+
     const userMsg =
-      `Client: ${client}\nPeriod: ${period || "this month"}\n\n` +
-      `Raw results the agency pasted:\n"""\n${rawText}\n"""\n\n` +
-      `Write the report as JSON matching the required schema.`;
+      (period ? `Period: ${period}\n\n` : "") +
+      `The owner's business data:\n"""\n${rawText}\n"""\n\n` +
+      `Write today's briefing as JSON matching the required schema. Follow the truthfulness rules exactly.`;
 
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: "claude-opus-5", // swap to "claude-haiku-4-5" to cut cost ~5x
-        max_tokens: 4000,
-        system: SYSTEM,
-        output_config: {
-          effort: "medium",
-          format: { type: "json_schema", schema: REPORT_SCHEMA }
-        },
-        messages: [{ role: "user", content: userMsg }]
-      })
-    });
+    const out = await callClaude(env, { system: BRIEFING_SYSTEM, userMsg, schema: BRIEFING_SCHEMA });
+    if (out.error) return out.error;
 
-    if (!resp.ok) {
-      const detail = await resp.text();
-      return json({ error: "Report engine error.", detail }, 502);
-    }
-
-    const data = await resp.json();
-    if (data.stop_reason === "refusal") {
-      return json({ error: "Couldn't process that input — try rephrasing the data." }, 422);
-    }
-
-    const textBlock = (data.content || []).find((b) => b.type === "text");
-    if (!textBlock) return json({ error: "Empty response from report engine." }, 502);
-
-    const ai = JSON.parse(textBlock.text);
-    // Merge in the header fields the user typed (kept verbatim).
-    return json({ agency, client, period, accent, ...ai }, 200);
+    const briefing = JSON.parse(out.text);
+    return json(briefing, 200);
   } catch (e) {
-    return json({ error: "Something broke generating the report.", detail: String(e) }, 500);
+    return json({ error: "Something broke generating the briefing.", detail: String(e) }, 500);
   }
 }
