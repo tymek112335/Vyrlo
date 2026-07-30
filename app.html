@@ -227,6 +227,18 @@
   .sw input:checked + .track{background:var(--accent)}
   .sw input:checked + .track:before{transform:translateX(18px)}
   .note{font-size:12px;color:var(--ink-3);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.5}
+  .gate{position:fixed;inset:0;z-index:80;background:rgba(250,250,248,.96);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}
+  .gate.on{display:flex}
+  .gate-card{position:relative;width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:32px 28px;text-align:center}
+  .gate-x{position:absolute;top:14px;right:16px;border:none;background:none;color:var(--ink-3);font-size:16px;cursor:pointer;line-height:1}
+  .gate-brand{font-weight:800;font-size:20px;letter-spacing:-.02em;margin-bottom:18px}
+  .gate-card h2{font-size:20px;font-weight:700;letter-spacing:-.02em;margin:0 0 8px}
+  .gate-card p{font-size:14px;color:var(--ink-2);margin:0 0 22px;line-height:1.5}
+  .gate-card .btn.primary{width:100%}
+  .gate-or{color:var(--ink-3);font-size:12.5px;margin:16px 0}
+  .gate-code{display:flex;gap:8px}
+  .gate-code input{flex:1;border:1px solid var(--line-2);background:var(--surface-2);border-radius:11px;padding:11px 13px;font-size:14px;color:var(--ink);outline:none}
+  .gate-err{color:var(--bad);font-size:12.5px;margin-top:12px;min-height:16px}
   .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:13px 18px;border-radius:12px;font-size:14px;font-weight:540;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.22s;z-index:200}
   .toast.on{opacity:1;transform:translate(-50%,0)}
 
@@ -273,6 +285,10 @@
         </button>
       </nav>
       <div class="sb-foot">
+        <button class="nav-item" id="nav-unlock">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          Access code
+        </button>
         <button class="nav-item" id="nav-settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.3a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.7 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
           Settings
@@ -372,6 +388,25 @@ Deep Sleep stock: 41 units left."></textarea>
     <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn sm" id="settings-close">Done</button></div>
   </div>
 
+  <!-- ACCESS GATE -->
+  <div class="gate" id="gate">
+    <div class="gate-card">
+      <button class="gate-x" id="gate-close" aria-label="Close">✕</button>
+      <div class="gate-brand">Vyrlo</div>
+      <h2 id="gate-title">Unlimited access</h2>
+      <p id="gate-sub">Enter your access code for unlimited briefings, or take one free.</p>
+      <div id="gate-free">
+        <button class="btn primary" id="gate-try">Try 1 free briefing →</button>
+        <div class="gate-or">— or enter a code —</div>
+      </div>
+      <div class="gate-code">
+        <input id="gate-input" type="password" placeholder="Access code" autocomplete="off">
+        <button class="btn" id="gate-unlock">Unlock</button>
+      </div>
+      <div class="gate-err" id="gate-err"></div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -385,6 +420,9 @@ Deep Sleep stock: 41 units left."></textarea>
   function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
   var settings=load(LS.settings,{name:"",email:false,time:"08:00"});
   var lastRaw="", pendingFileText="";
+  var accessCode=(function(){try{return localStorage.getItem("vyrlo.access")||""}catch(e){return ""}})();
+  function freeUsed(){try{return !!localStorage.getItem("vyrlo.freeUsed")}catch(e){return false}}
+  function markFreeUsed(){try{localStorage.setItem("vyrlo.freeUsed","1")}catch(e){}}
 
   var TOOLS=[
     {live:true,name:"Daily Briefing",desc:"Turn your numbers into a what/why/what-next briefing.",icon:'<path d="M4 19V9l8-6 8 6v10a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/>'},
@@ -436,7 +474,7 @@ Deep Sleep stock: 41 units left."></textarea>
         +'<span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+t.icon+'</svg></span>'
         +'<h4>'+esc(t.name)+'</h4><p>'+esc(t.desc)+'</p></button>';
     }).join("");
-    $$("#tools [data-build]").forEach(function(b){b.addEventListener("click",function(){showView("upload")})});
+    $$("#tools [data-build]").forEach(function(b){b.addEventListener("click",goBuild)});
     $$("#tools [data-soon]").forEach(function(b){b.addEventListener("click",function(){toast(b.getAttribute("data-soon")+" is coming soon.")})});
     // recents
     var reps=load(LS.reports,[]);
@@ -475,6 +513,9 @@ Deep Sleep stock: 41 units left."></textarea>
   function render(b,opts){
     opts=opts||{};
     var name=(settings.name||"").trim();
+    var askOff=opts.preview||!accessCode;
+    var askNote=opts.preview?"Ask AI activates once the engine is live.":(!accessCode?"Enter your access code (left sidebar) to ask follow-up questions.":"");
+    currentBriefing=b;
     var metrics=(b.what_changed||[]).map(function(m,i){
       var pillClass=m.direction==="flat"?"flat":(m.positive?"up":"down");
       var arrow=m.direction==="down"?"▼":m.direction==="flat"?"■":"▲";
@@ -500,7 +541,7 @@ Deep Sleep stock: 41 units left."></textarea>
       +'<div class="card" style="padding:16px"><div class="flag risk"><div class="lbl">⚠ Risk</div><h4>'+esc(risk.title||"")+'</h4><p>'+esc(risk.detail||"")+'</p>'+(risk.action?'<div class="act">→ '+esc(risk.action)+'</div>':'')+'</div></div>'
       +'<div class="card" style="padding:16px"><div class="flag opp"><div class="lbl">◆ Opportunity</div><h4>'+esc(opp.title||"")+'</h4><p>'+esc(opp.detail||"")+'</p>'+(opp.recommendation?'<div class="act">→ '+esc(opp.recommendation)+'</div>':'')+(opp.impact?'<p style="margin-top:8px;opacity:.85">'+esc(opp.impact)+'</p>':'')+'</div></div>'
       +'<div class="card"><div class="sec-h">Today\'s recommendations</div><ul class="recs">'+recs+'</ul></div>'
-      +'<div class="card ask"><div class="sec-h">Ask about your business</div><div class="row"><input id="ask-input" placeholder="Why did profit change? Which product should I push?" '+(opts.preview?'disabled':'')+'><button class="btn primary" id="ask-send" '+(opts.preview?'disabled':'')+'>Ask</button></div><div class="qa" id="qa"></div>'+(opts.preview?'<div class="hint" style="margin-top:10px">Ask AI activates once the engine is live.</div>':'')+'</div>'
+      +'<div class="card ask"><div class="sec-h">Ask about your business</div><div class="row"><input id="ask-input" placeholder="Why did profit change? Which product should I push?" '+(askOff?'disabled':'')+'><button class="btn primary" id="ask-send" '+(askOff?'disabled':'')+'>Ask</button></div><div class="qa" id="qa"></div>'+(askNote?'<div class="hint" style="margin-top:10px">'+askNote+'</div>':'')+'</div>'
       +'<div class="foot">Vyrlo · one source in, one clear briefing out</div>';
 
     showView("briefing"); wireBriefing(b);
@@ -515,7 +556,7 @@ Deep Sleep stock: 41 units left."></textarea>
         input.value="";input.disabled=true;send.disabled=true;
         var block=document.createElement("div");block.innerHTML='<div class="qi">'+esc(q)+'</div><div class="ai">Thinking…</div>';
         $("#qa").appendChild(block);
-        fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"ask",question:q,briefing:b,rawText:lastRaw})})
+        fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"ask",question:q,briefing:b,rawText:lastRaw,accessCode:accessCode})})
           .then(function(r){return r.ok?r.json():Promise.reject()})
           .then(function(d){block.querySelector(".ai").textContent=d.answer||"No answer."})
           .catch(function(){block.querySelector(".ai").textContent="Couldn't reach the engine — try again once it's deployed."})
@@ -529,13 +570,14 @@ Deep Sleep stock: 41 units left."></textarea>
   /* ---------- generate ---------- */
   function currentRaw(){return (pendingFileText||$("#paste").value||"").trim()}
   function generate(){
+    if(!accessCode && freeUsed()){ showGate(); return; }
     var raw=currentRaw();
     if(!raw){$("#paste").focus();$("#paste").style.borderColor="var(--bad)";setTimeout(function(){$("#paste").style.borderColor=""},1200);return}
     settings.name=$("#name").value.trim()||settings.name;save(LS.settings,settings);
     lastRaw=raw;var period=$("#period").value.trim();var started=Date.now();startAnalyze();
-    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rawText:raw,period:period,name:settings.name})})
+    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rawText:raw,period:period,name:settings.name,accessCode:accessCode})})
       .then(function(r){if(!r.ok)throw new Error("bad");return r.json()})
-      .then(function(b){if(b.error)throw new Error(b.error);var w=Math.max(0,2200-(Date.now()-started));setTimeout(function(){finishAnalyze(function(){saveReport(b,period);render(b,{})})},w)})
+      .then(function(b){if(b.error)throw new Error(b.error);if(!accessCode)markFreeUsed();var w=Math.max(0,2200-(Date.now()-started));setTimeout(function(){finishAnalyze(function(){saveReport(b,period);render(b,{})})},w)})
       .catch(function(){var w=Math.max(0,2200-(Date.now()-started));setTimeout(function(){finishAnalyze(function(){render(SAMPLE,{preview:true})})},w)});
   }
   function saveReport(b,period){
@@ -561,18 +603,43 @@ Deep Sleep stock: 41 units left."></textarea>
   function closeSettings(){settings.name=$("#s-name").value.trim();settings.email=$("#s-email").checked;settings.time=$("#s-time").value;save(LS.settings,settings);$("#settings").classList.remove("on");$("#scrim").classList.remove("on");if($("#view-home").classList.contains("on"))renderHome()}
   var tt=null;function toast(msg){var t=$("#toast");t.textContent=msg;t.classList.add("on");clearTimeout(tt);tt=setTimeout(function(){t.classList.remove("on")},3600)}
 
+  var currentBriefing=null;
+  function showGate(){
+    var used=freeUsed();
+    $("#gate-free").style.display=used?"none":"";
+    $("#gate-title").textContent=used?"You've used your free briefing":"Unlimited access";
+    $("#gate-sub").textContent=used?"Enter your access code for unlimited briefings on this device.":"Enter your access code for unlimited briefings, or take one free.";
+    $("#gate-err").textContent="";$("#gate-input").value="";
+    $("#gate").classList.add("on");
+  }
+  function hideGate(){$("#gate").classList.remove("on")}
+  function verifyCode(){
+    var code=$("#gate-input").value.trim();if(!code)return;
+    $("#gate-err").textContent="Checking…";
+    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"verify",accessCode:code})})
+      .then(function(r){return r.json()})
+      .then(function(d){ if(d&&d.ok){ accessCode=code; try{localStorage.setItem("vyrlo.access",code)}catch(e){} hideGate(); toast("Unlocked — unlimited briefings."); if(currentBriefing && $("#view-briefing").classList.contains("on")) render(currentBriefing,{}); } else { $("#gate-err").textContent="That code isn't right."; } })
+      .catch(function(){ $("#gate-err").textContent="Couldn't check the code — try again."; });
+  }
+  function goBuild(){ if(!accessCode && freeUsed()){ showGate(); return; } pendingFileText="";$("#filename").textContent=""; showView("upload"); }
+
   /* ---------- wire ---------- */
-  $("#cta-build").addEventListener("click",function(){showView("upload")});
+  $("#cta-build").addEventListener("click",goBuild);
   $("#cta-sample").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});
   $("#sample-link").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});
   $("#generate").addEventListener("click",generate);
   $("#up-back").addEventListener("click",function(){showView("home")});
-  $("#new-briefing").addEventListener("click",function(){pendingFileText="";$("#filename").textContent="";showView("upload")});
+  $("#new-briefing").addEventListener("click",goBuild);
   $$('[data-nav="home"]').forEach(function(b){b.addEventListener("click",function(){showView("home")})});
   $$('.nav-item[data-soon]').forEach(function(b){b.addEventListener("click",function(){toast(b.getAttribute("data-soon")+" is coming soon.")})});
   $("#hamb").addEventListener("click",openSidebar);
   $("#nav-settings").addEventListener("click",openSettings);
   $("#settings-close").addEventListener("click",closeSettings);
+  $("#nav-unlock").addEventListener("click",showGate);
+  $("#gate-try").addEventListener("click",function(){hideGate();showView("upload")});
+  $("#gate-unlock").addEventListener("click",verifyCode);
+  $("#gate-close").addEventListener("click",hideGate);
+  $("#gate-input").addEventListener("keydown",function(e){if(e.key==="Enter")verifyCode()});
   $("#scrim").addEventListener("click",function(){closeSidebar();closeSettings()});
 
   var drop=$("#drop"),fi=$("#fileinput");

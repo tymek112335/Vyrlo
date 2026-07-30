@@ -151,6 +151,15 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   try {
     const reqBody = await request.json().catch(() => ({}));
+
+    // ---- Access-code verify (no model call, no key needed) -----------------
+    // A correct code unlocks unlimited use in the UI. The free-try limit is
+    // enforced client-side (browser flag) and bounded by the Anthropic spend cap.
+    if (reqBody.mode === "verify") {
+      const ok = !!(env.ACCESS_CODE && String(reqBody.accessCode || "").trim() === env.ACCESS_CODE);
+      return json({ ok }, 200);
+    }
+
     if (!env.ANTHROPIC_API_KEY) return json({ error: "Server is missing its API key." }, 500);
 
     // ---- Ask AI mode -------------------------------------------------------
