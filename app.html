@@ -516,6 +516,7 @@ Deep Sleep stock: 41 units left."></textarea>
     var askOff=opts.preview||!accessCode;
     var askNote=opts.preview?"Ask AI activates once the engine is live.":(!accessCode?"Enter your access code (left sidebar) to ask follow-up questions.":"");
     currentBriefing=b;
+    if(!opts.preview){ try{localStorage.setItem("vyrlo.last",JSON.stringify({briefing:b,raw:lastRaw}))}catch(e){} }
     var metrics=(b.what_changed||[]).map(function(m,i){
       var pillClass=m.direction==="flat"?"flat":(m.positive?"up":"down");
       var arrow=m.direction==="down"?"▼":m.direction==="flat"?"■":"▲";
@@ -651,6 +652,8 @@ Deep Sleep stock: 41 units left."></textarea>
 
   if(settings.name)$("#name").value=settings.name;
   renderHome();
+  // Restore the last briefing on load so a refresh doesn't lose it.
+  (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; render(last.briefing,{}); } }catch(e){} })();
 })();
 </script>
 </body>
