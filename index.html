@@ -226,7 +226,7 @@
         <a href="#faq">FAQ</a>
       </div>
       <div class="nav-cta">
-        <a class="btn ghost sm" href="/app.html">Open app</a>
+        <button class="btn ghost sm" id="login-soon">Log in</button>
         <a class="btn primary sm" href="/app.html">Try free</a>
         <button class="hamb" id="hamb" aria-label="Open menu" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       </div>
@@ -236,7 +236,7 @@
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
-      <a href="/app.html" style="color:var(--accent);font-weight:640">Open the app →</a>
+      <a href="/app.html" style="color:var(--accent);font-weight:640">Try it free →</a>
     </div>
   </nav>
 
@@ -441,7 +441,7 @@
         <a href="#how">How it works</a>
         <a href="#features">Features</a>
         <a href="#pricing">Pricing</a>
-        <a href="/app.html">Open app</a>
+        <a href="/app.html">Try it free</a>
       </div>
     </div>
   </footer>
@@ -485,6 +485,9 @@
   // toast + plan buttons (honest: no checkout wired yet)
   var toast=$("#toast"), tt=null;
   function showToast(msg){ toast.textContent=msg; toast.classList.add("on"); clearTimeout(tt); tt=setTimeout(function(){toast.classList.remove("on");},4200); }
+  var loginSoon=$("#login-soon");
+  if(loginSoon) loginSoon.addEventListener("click",function(){ showToast("Customer accounts are coming soon — try it free for now."); });
+
   $$("[data-plan]").forEach(function(b){
     b.addEventListener("click",function(){
       var plan=b.getAttribute("data-plan");

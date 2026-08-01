@@ -654,6 +654,8 @@ Deep Sleep stock: 41 units left."></textarea>
   renderHome();
   // Restore the last briefing on load so a refresh doesn't lose it.
   (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; render(last.briefing,{}); } }catch(e){} })();
+  // Show the trial/access gate on entry for anyone who hasn't unlocked.
+  if(!accessCode) showGate();
 })();
 </script>
 </body>
