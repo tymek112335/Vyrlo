@@ -18,6 +18,22 @@
     --shadow:0 10px 34px -14px rgba(20,22,34,.18),0 2px 6px rgba(20,22,34,.05);
     --r:18px;--sbw:248px;
   }
+  :root[data-theme="dark"]{
+    --bg:#0F1413;--surface:#161D1C;--surface-2:#1B2322;
+    --line:#26302E;--line-2:#313C3A;
+    --ink:#EAEEED;--ink-2:#A4ACAB;--ink-3:#6E7776;
+    --accent:#2AA79B;--accent-2:#33C0B2;--accent-weak:#123330;
+    --good:#3FBE8B;--good-weak:#123028;
+    --warn:#D69A3C;--warn-weak:#322813;
+    --bad:#E76A82;--bad-weak:#331A20;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    --shadow:0 10px 34px -14px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.3);
+  }
+  :root[data-theme="dark"] .hero-b .body,
+  :root[data-theme="dark"] .reasons li,
+  :root[data-theme="dark"] .qa .ai{color:#C7D0CF}
+  :root[data-theme="dark"] .flag.risk{color:#F0D9AD}
+  :root[data-theme="dark"] .flag.opp{color:#BFE6CF}
   *{box-sizing:border-box}
   html,body{margin:0}
   body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55}
@@ -268,7 +284,7 @@
   <div class="app">
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
-      <a class="sb-brand" href="/">Vyrlo</a>
+      <a class="sb-brand" href="#" id="sb-home">Vyrlo</a>
       <nav class="sb-nav">
         <div class="sb-group">Tools</div>
         <button class="nav-item active" data-nav="home">
@@ -319,7 +335,10 @@
           <button class="hamb" id="hamb" aria-label="Menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
           <h1 id="page-title">Dashboard</h1>
         </div>
-        <button class="btn primary sm" id="new-briefing" style="display:none">+ New briefing</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn ghost sm" id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+          <button class="btn primary sm" id="new-briefing" style="display:none">+ New briefing</button>
+        </div>
       </div>
       <div class="content">
 
@@ -435,6 +454,8 @@ Deep Sleep stock: 41 units left."></textarea>
   function load(k,f){try{return JSON.parse(localStorage.getItem(k))||f}catch(e){return f}}
   function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
   var settings=load(LS.settings,{name:"",email:false,time:"08:00"});
+  function applyTheme(t){document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light");try{localStorage.setItem("vyrlo.theme",t)}catch(e){}var tb=document.querySelector("#theme-toggle");if(tb)tb.textContent=t==="dark"?"☀️":"🌙";}
+  applyTheme((function(){try{return localStorage.getItem("vyrlo.theme")}catch(e){return null}})()||"light");
   var lastRaw="", pendingFileText="";
   var accessCode=(function(){try{return localStorage.getItem("vyrlo.access")||""}catch(e){return ""}})();
   function freeUsed(){try{return !!localStorage.getItem("vyrlo.freeUsed")}catch(e){return false}}
@@ -545,8 +566,8 @@ Deep Sleep stock: 41 units left."></textarea>
   function render(b,opts){
     opts=opts||{};
     var name=(settings.name||"").trim();
-    var askOff=opts.preview||!accessCode;
-    var askNote=opts.preview?"Ask AI activates once the engine is live.":(!accessCode?"Enter your access code (left sidebar) to ask follow-up questions.":"");
+    var askOff=opts.preview;
+    var askNote=opts.preview?"Ask AI activates once the engine is live.":"";
     currentBriefing=b;
     if(!opts.preview){ try{localStorage.setItem("vyrlo.last",JSON.stringify({briefing:b,raw:lastRaw}))}catch(e){} }
     var metrics=(b.what_changed||[]).map(function(m,i){
@@ -565,6 +586,7 @@ Deep Sleep stock: 41 units left."></textarea>
     $("#bwrap").innerHTML=""
       +(opts.preview?'<div class="preview-note">Preview mode — the live engine isn\'t reachable yet, so this is a sample. Once the API is deployed, this shows your real numbers.</div>':'')
       +'<div class="greet2"><h2>'+esc(greetWord())+(name?', '+esc(name):'')+'.</h2><div class="gen">Here\'s today\'s briefing · Generated <b>'+nowTime()+'</b></div></div>'
+      +(opts.preview?'':'<div style="display:flex;gap:8px;margin:-8px 0 18px"><button class="btn sm" id="b-download">Save / download</button><button class="btn sm" id="b-copy">Copy</button></div>')
       +'<div class="card hero-b"><div class="head">'+esc(sum.headline||"")+'</div><div class="body">'+(sum.body||"")+'</div>'
       +'<div class="health"><span class="badge '+(sum.health||"good")+'"><span class="dot"></span>'+esc(healthLabel(sum.health))+'</span>'+(sum.reading_time?'<span class="rt">Reading time · '+esc(sum.reading_time)+'</span>':'')+'</div></div>'
       +'<div class="card"><div class="sec-h">What changed</div><div class="metrics">'+metrics+'</div></div>'
@@ -580,8 +602,38 @@ Deep Sleep stock: 41 units left."></textarea>
     showView("briefing"); wireBriefing(b);
   }
 
+  function briefingToText(b){
+    var s=b.summary||{},w=b.why||{},r=b.risk||{},o=b.opportunity||{},L=[];
+    L.push(s.headline||"");L.push("");L.push((s.body||"").replace(/<[^>]+>/g,""));L.push("");
+    L.push("Business health: "+(s.health||""));L.push("");L.push("WHAT CHANGED");
+    (b.what_changed||[]).forEach(function(m){L.push("- "+m.metric+" "+m.value+": "+m.explanation)});
+    L.push("");L.push("WHY IT HAPPENED");L.push(w.question||"");
+    (w.reasons||[]).forEach(function(x,i){L.push((i+1)+". "+x)});
+    L.push("Confidence: "+(w.confidence||""));L.push("");
+    L.push("RISK");L.push((r.title||"")+" "+(r.detail||""));if(r.action)L.push("Action: "+r.action);L.push("");
+    L.push("OPPORTUNITY");L.push((o.title||"")+" "+(o.detail||""));if(o.recommendation)L.push("Recommendation: "+o.recommendation);L.push("");
+    L.push("RECOMMENDATIONS");
+    (b.recommendations||[]).forEach(function(x,i){L.push((i+1)+". "+x.title+" ("+x.effort+"): "+x.reason)});
+    L.push("");L.push("Generated with Vyrlo, vyrlo.cc");
+    return L.join("\n");
+  }
+  function downloadBriefing(b){
+    var name=prompt("Name this briefing:","Vyrlo briefing "+new Date().toLocaleDateString());
+    if(name===null)return;
+    var blob=new Blob([briefingToText(b)],{type:"text/plain"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);
+    a.download=((name||"").trim()||"vyrlo-briefing")+".txt";
+    document.body.appendChild(a);a.click();a.remove();
+  }
+  function copyBriefing(b){
+    var t=briefingToText(b);
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast("Briefing copied.")},function(){toast("Copy failed.")});}
+    else{toast("Copy not supported here.");}
+  }
   function wireBriefing(b){
     $$(".metric").forEach(function(el){el.addEventListener("click",function(){el.classList.toggle("open");var m=el.querySelector(".more");if(m)m.textContent=el.classList.contains("open")?"Hide ▾":"Details ▸"})});
+    var dl=$("#b-download");if(dl)dl.addEventListener("click",function(){downloadBriefing(b)});
+    var cp=$("#b-copy");if(cp)cp.addEventListener("click",function(){copyBriefing(b)});
     var send=$("#ask-send"),input=$("#ask-input");
     if(send&&input){
       var ask=function(){
@@ -668,6 +720,8 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#hamb").addEventListener("click",openSidebar);
   $("#nav-settings").addEventListener("click",openSettings);
   $("#settings-close").addEventListener("click",closeSettings);
+  $("#sb-home").addEventListener("click",function(e){e.preventDefault();showView("home")});
+  $("#theme-toggle").addEventListener("click",function(){applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark")});
   $("#nav-unlock").addEventListener("click",showGate);
   $("#gate-try").addEventListener("click",function(){hideGate();showView("home")});
   $("#gate-unlock").addEventListener("click",verifyCode);
