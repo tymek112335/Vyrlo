@@ -41,6 +41,7 @@
   html,body{margin:0}
   body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55}
   button,input,textarea{font-family:inherit}
+  button{color:inherit}
   a{color:inherit;text-decoration:none}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -270,6 +271,7 @@
   .gate-code{display:flex;gap:8px}
   .gate-code input{flex:1;border:1px solid var(--line-2);background:var(--surface-2);border-radius:11px;padding:11px 13px;font-size:14px;color:var(--ink);outline:none}
   .gate-err{color:var(--bad);font-size:12.5px;margin-top:12px;min-height:16px}
+  .gate-skip{background:none;border:none;color:var(--accent);font-size:13.5px;font-weight:560;cursor:pointer;margin-top:14px}
   .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:13px 18px;border-radius:12px;font-size:14px;font-weight:540;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.22s;z-index:200}
   .toast.on{opacity:1;transform:translate(-50%,0)}
 
@@ -442,6 +444,7 @@ Deep Sleep stock: 41 units left."></textarea>
         <button class="btn" id="gate-unlock">Unlock</button>
       </div>
       <div class="gate-err" id="gate-err"></div>
+      <button class="gate-skip" id="gate-dash">Go to your dashboard →</button>
     </div>
   </div>
 
@@ -728,7 +731,8 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#nav-unlock").addEventListener("click",showGate);
   $("#gate-try").addEventListener("click",function(){hideGate();showView("home")});
   $("#gate-unlock").addEventListener("click",verifyCode);
-  $("#gate-close").addEventListener("click",hideGate);
+  $("#gate-close").addEventListener("click",function(){window.location.href="/"});
+  $("#gate-dash").addEventListener("click",hideGate);
   $("#gate-input").addEventListener("keydown",function(e){if(e.key==="Enter")verifyCode()});
   $("#scrim").addEventListener("click",function(){closeSidebar();closeSettings()});
 
