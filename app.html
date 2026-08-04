@@ -361,6 +361,7 @@
               </div>
               <div class="acts">
                 <button class="btn primary lg" id="cta-build">Start →</button>
+                <button class="btn ghost lg" id="cta-shopify" style="display:none">Pull from Shopify</button>
                 <button class="btn ghost lg" id="cta-sample">See a sample</button>
               </div>
             </div>
@@ -510,6 +511,7 @@ Deep Sleep stock: 41 units left."></textarea>
     var name=(settings.name||"").trim();
     $("#dash-greet").textContent=greetWord()+(name?", "+name:"")+".";
     $("#dash-sub").textContent=new Date().toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"})+" · your workspace";
+    var shBtn=$("#cta-shopify"); if(shBtn) shBtn.style.display=accessCode?"":"none";
     var reps=load(LS.reports,[]);
     var last=reps[0];
     var healthMap={good:"Good",watch:"Watch",at_risk:"Needs attention"};
@@ -671,6 +673,14 @@ Deep Sleep stock: 41 units left."></textarea>
       .then(function(b){if(b.error)throw new Error(b.error);if(!accessCode)markFreeUsed();var w=Math.max(0,2200-(Date.now()-started));setTimeout(function(){finishAnalyze(function(){saveReport(b,period);render(b,{})})},w)})
       .catch(function(){var w=Math.max(0,2200-(Date.now()-started));setTimeout(function(){finishAnalyze(function(){render(SAMPLE,{preview:true})})},w)});
   }
+  function pullShopify(){
+    if(!accessCode){ showGate(); return; }
+    var started=Date.now(); startAnalyze();
+    fetch("/api/shopify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({accessCode:accessCode})})
+      .then(function(r){ return r.json().then(function(j){ return r.ok?j:Promise.reject(j); }); })
+      .then(function(d){ if(d.error) throw new Error(d.error); lastRaw=d.rawText||""; var w=Math.max(0,2200-(Date.now()-started)); setTimeout(function(){ finishAnalyze(function(){ saveReport(d.briefing,"Shopify"); render(d.briefing,{}); }); },w); })
+      .catch(function(err){ finishAnalyze(function(){ toast((err&&err.error)||"Shopify pull failed."); }); });
+  }
   function saveReport(b,period){
     var reps=load(LS.reports,[]);
     var label=period?period:new Date().toLocaleDateString([], {month:"short",day:"numeric"});
@@ -716,6 +726,7 @@ Deep Sleep stock: 41 units left."></textarea>
 
   /* ---------- wire ---------- */
   $("#cta-build").addEventListener("click",goBuild);
+  $("#cta-shopify").addEventListener("click",pullShopify);
   $("#cta-sample").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});
   $("#sample-link").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});
   $("#generate").addEventListener("click",generate);
