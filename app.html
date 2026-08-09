@@ -310,6 +310,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           Consultant <span class="ready-pill">AI</span>
         </button>
+        <button class="nav-item" id="nav-history">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          Briefings
+        </button>
         <button class="nav-item soon" data-soon="Shopify connect">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/></svg>
           Shopify Connect <span class="soon-pill">Soon</span>
@@ -435,6 +439,13 @@ Deep Sleep stock: 41 units left."></textarea>
           </div>
         </section>
 
+        <section class="view" id="view-history">
+          <div class="home">
+            <div class="greet"><h2>Briefings</h2><p id="hist-sub">Every briefing you've generated.</p></div>
+            <div class="recents" id="history-list"></div>
+          </div>
+        </section>
+
       </div>
     </div>
   </div>
@@ -495,7 +506,8 @@ Deep Sleep stock: 41 units left."></textarea>
   function markFreeUsed(){try{localStorage.setItem("vyrlo.freeUsed","1")}catch(e){}}
 
   var TOOLS=[
-    {live:true,name:"Daily Briefing",desc:"Turn your numbers into a what/why/what-next briefing.",icon:'<path d="M4 19V9l8-6 8 6v10a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/>'},
+    {live:true,action:"build",name:"Daily Briefing",desc:"Turn your numbers into a what/why/what-next briefing.",icon:'<path d="M4 19V9l8-6 8 6v10a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/>'},
+    {live:true,action:"chat",name:"AI Consultant",desc:"Chat with an AI that knows your numbers and tells you what to do next.",icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
     {name:"Shopify Connect",desc:"Auto-pull orders daily — no manual export.",icon:'<path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/>'},
     {name:"Stripe",desc:"Bring in payments, refunds and MRR.",icon:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>'},
     {name:"Google Sheets",desc:"Sync a sheet and brief on it automatically.",icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/>'},
@@ -529,6 +541,14 @@ Deep Sleep stock: 41 units left."></textarea>
     $("#new-briefing").style.display = (v==="briefing")?"":"none";
     closeSidebar(); window.scrollTo(0,0);
     if(v==="home"){ renderHome(); }
+    if(v==="history"){ renderHistory(); }
+  }
+  function renderHistory(){
+    var reps=load(LS.reports,[]);
+    if(!reps.length){ $("#history-list").innerHTML='<div class="empty">No briefings yet — build your first one.</div>'; $("#hist-sub").textContent="Every briefing you've generated."; return; }
+    $("#hist-sub").textContent=reps.length+" briefing"+(reps.length>1?"s":"")+" saved on this device.";
+    $("#history-list").innerHTML=reps.map(function(r){return '<button class="rep" data-id="'+r.id+'"><div><div class="rl">'+esc(r.label)+'</div><div class="rd">'+esc(r.date)+'</div></div><span class="rh">View →</span></button>'}).join("");
+    $$("#history-list .rep").forEach(function(el){el.addEventListener("click",function(){ var r=load(LS.reports,[]).find(function(x){return String(x.id)===el.getAttribute("data-id")}); if(r){ lastRaw=r.raw||""; render(r.briefing,{}); } })});
   }
 
   function greetWord(){var h=new Date().getHours();return h<12?"Good morning":h<18?"Good afternoon":"Good evening";}
@@ -557,12 +577,13 @@ Deep Sleep stock: 41 units left."></textarea>
     // tools
     $("#tools").innerHTML=TOOLS.map(function(t,i){
       var cls=t.live?"tool live":"tool soon";
-      return '<button class="'+cls+'" '+(t.live?'data-build="1"':'data-soon="'+esc(t.name)+'"')+'>'
+      return '<button class="'+cls+'" '+(t.live?'data-action="'+t.action+'"':'data-soon="'+esc(t.name)+'"')+'>'
         +'<span class="st">'+(t.live?'Live':'Soon')+'</span>'
         +'<span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+t.icon+'</svg></span>'
         +'<h4>'+esc(t.name)+'</h4><p>'+esc(t.desc)+'</p></button>';
     }).join("");
-    $$("#tools [data-build]").forEach(function(b){b.addEventListener("click",goBuild)});
+    $$('#tools [data-action="build"]').forEach(function(b){b.addEventListener("click",goBuild)});
+    $$('#tools [data-action="chat"]').forEach(function(b){b.addEventListener("click",openChat)});
     $$("#tools [data-soon]").forEach(function(b){b.addEventListener("click",function(){toast(b.getAttribute("data-soon")+" is coming soon.")})});
     // recents
     if(!reps.length){ $("#recents").innerHTML='<div class="empty">No briefings yet — build your first one above.</div>'; }
@@ -772,6 +793,7 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#cta-build").addEventListener("click",goBuild);
   $("#cta-shopify").addEventListener("click",pullShopify);
   $("#nav-consultant").addEventListener("click",openChat);
+  $("#nav-history").addEventListener("click",function(){showView("history")});
   $("#chat-send").addEventListener("click",chatSend);
   $("#chat-in").addEventListener("keydown",function(e){ if(e.key==="Enter") chatSend(); });
   $("#cta-sample").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});
@@ -803,8 +825,8 @@ Deep Sleep stock: 41 units left."></textarea>
 
   if(settings.name)$("#name").value=settings.name;
   renderHome();
-  // Restore the last briefing on load so a refresh doesn't lose it.
-  (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; render(last.briefing,{}); } }catch(e){} })();
+  // Load last briefing as context (for the consultant) but stay on the dashboard.
+  (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; currentBriefing=last.briefing; } }catch(e){} })();
   // Show the trial/access gate on entry for anyone who hasn't unlocked.
   if(!accessCode) showGate();
 })();
