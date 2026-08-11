@@ -259,6 +259,20 @@
   .tldr{margin-top:16px;padding:13px 15px;background:var(--accent-weak);border-radius:12px}
   .tldr-k{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
   .tldr-v{font-size:13.5px;line-height:1.6;color:var(--ink);font-weight:520}
+
+  /* daily briefing: trend sparkline */
+  .spark-wrap{width:100%}
+  .spark{width:100%;height:96px;display:block;overflow:visible}
+  .spark-line{stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+  .spark.up .spark-line{stroke:var(--good)}
+  .spark.down .spark-line{stroke:var(--bad)}
+  .spark-dot{fill:var(--surface);stroke-width:2}
+  .spark.up .spark-dot{stroke:var(--good)}
+  .spark.down .spark-dot{stroke:var(--bad)}
+  .spark-dot.last{fill:currentColor}
+  .spark.up .spark-dot.last{fill:var(--good)}
+  .spark.down .spark-dot.last{fill:var(--bad)}
+  .spark-labels{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
   /* Stacked on narrow screens the "compared with" separator strands beside one
      select, so the two labelled dropdowns carry the meaning on their own. */
   @media(max-width:640px){
@@ -345,6 +359,13 @@
   .flag .lbl{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.7;margin-bottom:6px}
   .flag.risk{background:var(--warn-weak);color:#5b4416}.flag.risk .act{color:var(--warn)}
   .flag.opp{background:var(--good-weak);color:#0f4d34}.flag.opp .act{color:var(--good)}
+  /* fl-row/.fl-k/.fl-v are shared with Compare; inherit the warm/green text
+     colour already set above (and its dark-mode override) instead of the
+     neutral ink tone those classes normally use. */
+  .flag .fl-row{border-top-color:rgba(0,0,0,.12)}
+  .flag .fl-k{color:inherit;opacity:.62}
+  .flag .fl-v{color:inherit}
+  :root[data-theme="dark"] .flag .fl-row{border-top-color:rgba(255,255,255,.14)}
   .recs{margin:0;padding:0;list-style:none}
   .rec{display:flex;gap:14px;padding:15px 2px;border-bottom:1px solid var(--line)}
   .rec:last-child{border-bottom:none}
@@ -654,6 +675,12 @@ Deep Sleep stock: 41 units left."></textarea>
       {title:"Reorder Deep Sleep inventory",reason:"Fastest seller, ~41 units left.",effort:"10 min"},
       {title:"Feature Deep Sleep on the homepage",reason:"It's carrying revenue right now.",effort:"5 min"},
       {title:"Draft a repeat-purchase email",reason:"Returning-customer share is high.",effort:"20 min"}
+    ],
+    narrative:[
+      "The 14% revenue rise and the jump in average order value share the same root cause rather than being two separate wins: the Deep Sleep bundle, at a higher price point than usual, made up a larger share of yesterday's 62 orders. That single shift in product mix explains both numbers moving together.",
+      "The order split leaned slightly toward new customers (34 new vs 28 returning), but it was the returning group that drove the AOV up — repeat buyers were more likely to reach for the pricier bundle, which is a different behaviour from a simple traffic increase.",
+      "The risk and the opportunity are connected too: the same product driving the good news, Deep Sleep, is also the one running low on stock. If it sells out, both the revenue gain and the returning-customer momentum from the opportunity section would stall at the same time, which is why reordering ranks first among today's actions.",
+      "What this can't tell you: there's no website traffic or ad spend in this data, so whether more people visited the store yesterday or the same visitors simply bought more is not something these numbers can answer. Confidence on the 'why' is medium rather than high for that reason."
     ]
   };
 
@@ -1116,6 +1143,101 @@ Deep Sleep stock: 41 units left."></textarea>
   function healthLabel(h){return h==="good"?"Good":h==="watch"?"Watch":"Needs attention"}
   function nowTime(){return new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}
 
+  // Turns what_changed into the same row shape diffBriefings() produces, so
+  // the single-briefing chart can reuse Compare's chartHtml() untouched. Only
+  // metrics expressed as a percentage carry an honest magnitude to plot — a
+  // raw total like "$68" has no baseline within one briefing to size a bar by.
+  function whatChangedToRows(list){
+    return (list||[]).map(function(m){
+      var pv=parseVal(m.value);
+      var isPct=!!(pv&&pv.unit==="%");
+      return {metric:m.metric,status:"both",now:m.value,then:null,
+        comparable:isPct,pct:isPct?pv.n:null,delta:isPct?pv.n:null,unit:isPct?"%":null,
+        polarity:polarity(m)};
+    });
+  }
+
+  function keyStatsHtml(list){
+    var top=(list||[]).slice(0,4);
+    if(!top.length) return "";
+    return '<div class="cmp-head" style="margin:0 0 18px">'+top.map(function(m){
+      var cls=m.direction==="flat"?"flat":(m.positive?"up":"down");
+      var arrow=m.direction==="down"?"▼":m.direction==="flat"?"■":"▲";
+      return '<div class="cmp-h"><div class="k">'+esc(m.metric)+'</div><div class="v">'
+        +'<span class="cdelta '+cls+'" style="display:inline-flex;gap:5px">'+arrow+' '+esc(m.value)+'</span></div></div>';
+    }).join("")+'</div>';
+  }
+
+  function healthGaugeHtml(sum){
+    var h=sum.health||"good";
+    var pos = h==="good"?88 : h==="watch"?50 : 12;
+    var tone = h==="good"?"up" : h==="watch"?"flat" : "down";
+    return '<div class="card"><div class="sec-h">Health at a glance</div>'
+      +'<div class="mom-top"><span class="mom-label '+tone+'">'+esc(healthLabel(h))+'</span>'
+      +(sum.reading_time?'<span class="mom-meta">Reading time · '+esc(sum.reading_time)+'</span>':'')+'</div>'
+      +'<div class="gauge"><span class="g-mid"></span><span class="g-needle '+tone+'" style="left:'+pos+'%"></span></div>'
+      +'<div class="g-scale"><span>Needs attention</span><span>Watch</span><span>Good</span></div></div>';
+  }
+
+  // A metric whose value is a plain figure (not a % delta) has no baseline
+  // within a single briefing — but the SAME metric across several SAVED
+  // briefings does. Walks the current briefing's metrics in order and plots
+  // the first one that reappears, with a plain figure, in at least one other
+  // recent briefing. Real historical numbers only; nothing is computed.
+  function findTrendSeries(){
+    var reps=load(LS.reports,[]);
+    if(reps.length<2) return {reason:"history"};
+    var recent=reps.slice(0,6);
+    var current=recent[0].briefing||{};
+    var list=current.what_changed||[];
+    for(var i=0;i<list.length;i++){
+      var key=normName(list[i].metric);
+      var pts=[];
+      for(var j=recent.length-1;j>=0;j--){
+        var mc=((recent[j].briefing&&recent[j].briefing.what_changed)||[]).find(function(x){return normName(x.metric)===key});
+        if(!mc) continue;
+        var pv=parseVal(mc.value);
+        if(!pv||pv.unit==="%") continue;
+        pts.push({label:recent[j].label,n:pv.n,raw:mc.value});
+      }
+      if(pts.length>=2) return {name:list[i].metric,points:pts};
+    }
+    return {reason:"noseries"};
+  }
+
+  function trendHtml(){
+    var s=findTrendSeries();
+    if(s.reason==="history") return '<div class="card"><div class="sec-h">Trend</div><div class="empty">Build a few more briefings and a trend will appear here automatically.</div></div>';
+    if(s.reason==="noseries") return '<div class="card"><div class="sec-h">Trend</div><div class="empty">None of your metrics use a plain figure (rather than a percentage) across enough recent briefings yet to chart a trend.</div></div>';
+    var pts=s.points, n=pts.length;
+    var vals=pts.map(function(p){return p.n});
+    var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+    var span=(hi-lo)||1;
+    var W=560,H=110,pad=14;
+    var xy=pts.map(function(p,i){
+      var x=pad+(n===1?0:(W-2*pad)*i/(n-1));
+      var y=H-pad-((p.n-lo)/span)*(H-2*pad);
+      return {x:x,y:y,p:p};
+    });
+    var path=xy.map(function(pt,i){return (i?"L":"M")+pt.x.toFixed(1)+","+pt.y.toFixed(1)}).join(" ");
+    var up = xy[xy.length-1].p.n >= xy[0].p.n;
+    var dots=xy.map(function(pt,i){
+      return '<circle cx="'+pt.x.toFixed(1)+'" cy="'+pt.y.toFixed(1)+'" r="'+(i===xy.length-1?4.5:3)+'" class="spark-dot'+(i===xy.length-1?" last":"")+'"><title>'+esc(pt.p.label+": "+pt.p.raw)+'</title></circle>';
+    }).join("");
+    return '<div class="card"><div class="sec-h">Trend · '+esc(s.name)+'</div>'
+      +'<p class="note">The last '+n+' briefings that reported '+esc(s.name)+' as a plain figure. Real saved values, not a forecast.</p>'
+      +'<div class="spark-wrap"><svg viewBox="0 0 '+W+' '+H+'" class="spark '+(up?"up":"down")+'" preserveAspectRatio="none">'
+      +'<path d="'+path+'" class="spark-line" fill="none"/>'+dots+'</svg>'
+      +'<div class="spark-labels"><span>'+esc(xy[0].p.label)+' · '+esc(xy[0].p.raw)+'</span><span>'+esc(xy[xy.length-1].p.label)+' · '+esc(xy[xy.length-1].p.raw)+'</span></div></div></div>';
+  }
+
+  function flagFieldsHtml(fields){
+    return fields.map(function(f){
+      if(!f.v) return "";
+      return '<div class="fl-row"><div class="fl-k">'+esc(f.k)+'</div><div class="fl-v">'+esc(f.v)+'</div></div>';
+    }).join("");
+  }
+
   function render(b,opts){
     opts=opts||{};
     var name=(settings.name||"").trim();
@@ -1136,19 +1258,39 @@ Deep Sleep stock: 41 units left."></textarea>
     var recs=(b.recommendations||[]).map(function(r,i){return '<li class="rec"><span class="n">'+(i+1)+'</span><div class="body"><div class="t">'+esc(r.title)+'</div><div class="r">'+esc(r.reason)+'</div></div><span class="eff">'+esc(r.effort)+'</span></li>'}).join("");
     var risk=b.risk||{},opp=b.opportunity||{},why=b.why||{},sum=b.summary||{};
 
+    var chartRows=whatChangedToRows(b.what_changed);
+    var chartable=chartRows.filter(function(r){return r.comparable}).length;
+    var rest=chartRows.length-chartable;
+    var chartSection = chartable
+      ? '<p class="note">Metrics reported as a percentage change, sized on that same scale. '
+        +(rest?rest+' other metric'+(rest===1?"":"s")+' below '+(rest===1?"is":"are")+' a plain figure rather than a percentage, so '+(rest===1?"it isn't":"they aren't")+' shown as a bar.':'')
+        +'</p>'+chartHtml(chartRows)
+      : '';
+
+    var narrativeCard = (Array.isArray(b.narrative)&&b.narrative.length)
+      ? '<div class="card"><div class="sec-h">The full picture</div><p class="note">A longer read for when the two-minute version above isn\'t enough.</p>'
+        +'<div class="narr">'+b.narrative.map(function(t){return '<p>'+esc(t)+'</p>'}).join("")+'</div></div>'
+      : '';
+
     $("#bwrap").innerHTML=""
       +(opts.preview?'<div class="preview-note">Preview mode — the live engine isn\'t reachable yet, so this is a sample. Once the API is deployed, this shows your real numbers.</div>':'')
       +'<div class="greet2"><h2>'+esc(greetWord())+(name?', '+esc(name):'')+'.</h2><div class="gen">Here\'s today\'s briefing · Generated <b>'+nowTime()+'</b></div></div>'
       +(opts.preview?'':'<div style="display:flex;gap:8px;margin:-8px 0 18px"><button class="btn sm" id="b-download">Save / download</button><button class="btn sm" id="b-copy">Copy</button></div>')
       +'<div class="card hero-b"><div class="head">'+esc(sum.headline||"")+'</div><div class="body">'+(sum.body||"")+'</div>'
       +'<div class="health"><span class="badge '+(sum.health||"good")+'"><span class="dot"></span>'+esc(healthLabel(sum.health))+'</span>'+(sum.reading_time?'<span class="rt">Reading time · '+esc(sum.reading_time)+'</span>':'')+'</div></div>'
-      +'<div class="card"><div class="sec-h">What changed</div><div class="metrics">'+metrics+'</div></div>'
+      +keyStatsHtml(b.what_changed)
+      +healthGaugeHtml(sum)
+      +(opts.preview?'':trendHtml())
+      +'<div class="card"><div class="sec-h">What changed</div>'+chartSection+'<div class="metrics">'+metrics+'</div></div>'
       +'<div class="card why"><div class="sec-h">Why it happened</div><div class="q">'+esc(why.question||"")+'</div><ul class="reasons">'+reasons+'</ul>'
       +'<div class="conf '+conf+'">Confidence · <b>'+esc(conf.charAt(0).toUpperCase()+conf.slice(1))+'</b></div>'
       +(why.reasoning?'<details class="disc"><summary>How we reached this</summary><div class="reason">'+esc(why.reasoning)+'</div></details>':'')+'</div>'
-      +'<div class="card" style="padding:16px"><div class="flag risk"><div class="lbl">⚠ Risk</div><h4>'+esc(risk.title||"")+'</h4><p>'+esc(risk.detail||"")+'</p>'+(risk.action?'<div class="act">→ '+esc(risk.action)+'</div>':'')+'</div></div>'
-      +'<div class="card" style="padding:16px"><div class="flag opp"><div class="lbl">◆ Opportunity</div><h4>'+esc(opp.title||"")+'</h4><p>'+esc(opp.detail||"")+'</p>'+(opp.recommendation?'<div class="act">→ '+esc(opp.recommendation)+'</div>':'')+(opp.impact?'<p style="margin-top:8px;opacity:.85">'+esc(opp.impact)+'</p>':'')+'</div></div>'
+      +'<div class="card" style="padding:16px"><div class="flag risk"><div class="lbl">⚠ Risk</div><h4>'+esc(risk.title||"")+'</h4>'
+        +flagFieldsHtml([{k:"Detail",v:risk.detail},{k:"Suggested action",v:risk.action}])+'</div></div>'
+      +'<div class="card" style="padding:16px"><div class="flag opp"><div class="lbl">◆ Opportunity</div><h4>'+esc(opp.title||"")+'</h4>'
+        +flagFieldsHtml([{k:"Detail",v:opp.detail},{k:"Recommendation",v:opp.recommendation},{k:"Potential impact",v:opp.impact}])+'</div></div>'
       +'<div class="card"><div class="sec-h">Today\'s recommendations</div><ul class="recs">'+recs+'</ul></div>'
+      +narrativeCard
       +'<div class="card ask"><div class="sec-h">Ask about your business</div><div class="row"><input id="ask-input" placeholder="Why did profit change? Which product should I push?" '+(askOff?'disabled':'')+'><button class="btn primary" id="ask-send" '+(askOff?'disabled':'')+'>Ask</button></div><div class="qa" id="qa"></div>'+(askNote?'<div class="hint" style="margin-top:10px">'+askNote+'</div>':'')+'</div>'
       +'<div class="foot">Vyrlo · one source in, one clear briefing out</div>';
 
@@ -1167,6 +1309,10 @@ Deep Sleep stock: 41 units left."></textarea>
     L.push("OPPORTUNITY");L.push((o.title||"")+" "+(o.detail||""));if(o.recommendation)L.push("Recommendation: "+o.recommendation);L.push("");
     L.push("RECOMMENDATIONS");
     (b.recommendations||[]).forEach(function(x,i){L.push((i+1)+". "+x.title+" ("+x.effort+"): "+x.reason)});
+    if(Array.isArray(b.narrative)&&b.narrative.length){
+      L.push("");L.push("THE FULL PICTURE");
+      b.narrative.forEach(function(p){L.push(p);L.push("")});
+    }
     L.push("");L.push("Generated with Vyrlo, vyrlo.cc");
     return L.join("\n");
   }

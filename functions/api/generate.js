@@ -8,7 +8,7 @@
 const BRIEFING_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["summary", "what_changed", "why", "risk", "opportunity", "recommendations"],
+  required: ["summary", "what_changed", "why", "risk", "opportunity", "recommendations", "narrative"],
   properties: {
     summary: {
       type: "object",
@@ -81,6 +81,10 @@ const BRIEFING_SCHEMA = {
           effort: { type: "string" }               // "5 min", "15 min", etc.
         }
       }
+    },
+    narrative: {
+      type: "array",
+      items: { type: "string" }                    // 3-4 longer paragraphs, the full-depth read
     }
   }
 };
@@ -103,10 +107,11 @@ IF THE DATA IS A SCREENSHOT OR IMAGE (e.g. a photo of an analytics dashboard):
 
 STYLE:
 - summary.headline: one short, human line ("Yesterday was a strong day.", "A quieter day, with one thing to watch.").
-- summary.body: ONE plain paragraph, no jargon, lead with the business outcome.
+- summary.body: ONE plain paragraph, no jargon, lead with the business outcome. This is the two-minute read — keep it short, the depth belongs in narrative.
 - summary.health: "good" when mostly positive with no pressing problem; "watch" when mixed; "at_risk" when there's a real problem.
-- what_changed: the 4-6 most important metrics. value is a short display delta with units. positive = whether that change is good for the business (a FALLING cost is positive:true).
+- what_changed: the 4-6 most important metrics. value is a short display delta with units. positive = whether that change is good for the business (a FALLING cost is positive:true). Where you can, express the delta as a percentage ("+14%") rather than only a raw total — percentages let metrics with different units be compared visually, and at least one or two metrics with a genuine percentage change make that possible.
 - recommendations: 2-3 concrete, specific next steps with a realistic effort estimate. No vague advice.
+- narrative: 3-4 longer paragraphs for the owner who wants the full depth, not just the two-minute version. Do not just restate summary.body. Cover: how the metrics in what_changed relate to each other (e.g. did the AOV rise because of the same thing that drove revenue, or a different cause), a fuller version of the reasoning behind why (more than the one-line reasons array), how the risk and opportunity connect to the numbers, and — as its own short final paragraph — what remains genuinely uncertain from this data (echo why.reasoning's caveat, expanded). Every figure used here must already appear elsewhere in the briefing; narrative explains connections between existing figures, it does not compute or introduce new ones.
 - Calm, direct, non-technical throughout.`;
 
 const COMPARE_SYSTEM = `You are the analyst behind a business owner's daily briefings. They are looking at two briefings side by side and want to know what actually changed between them.
