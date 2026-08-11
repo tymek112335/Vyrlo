@@ -164,6 +164,63 @@
   .fmt{display:flex;gap:14px;justify-content:center;margin-top:14px;color:var(--ink-3);font-size:12px;flex-wrap:wrap}
   #shot-preview{display:block;max-width:100%;max-height:190px;margin:12px auto 0;border-radius:10px;border:1px solid var(--line-2)}
   #shot-preview[hidden]{display:none}
+
+  /* ---------- compare ---------- */
+  .cmp-pick{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px}
+  .cmp-pick .fld{flex:1 1 190px;min-width:170px}
+  .cmp-pick label{display:block;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+  .cmp-pick select{width:100%;padding:9px 11px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
+  .cmp-vs{padding-bottom:10px;color:var(--ink-3);font-size:12px;font-weight:600}
+  .cmp-head{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .cmp-h{flex:1 1 220px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .cmp-h .k{font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+  .cmp-h .v{font-size:15px;font-weight:600;color:var(--ink);line-height:1.4}
+  .cmp-h .v .arrow{color:var(--ink-3);margin:0 6px;font-weight:400}
+  .cmp-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 18px 14px;margin-bottom:16px}
+  .cmp-card > h3{font-size:14px;font-weight:650;margin:0 0 3px}
+  .cmp-card > .note{font-size:12px;color:var(--ink-3);margin:0 0 14px}
+
+  /* diverging bar chart: down to the left, up to the right */
+  .chart{display:flex;flex-direction:column;gap:9px}
+  .crow{display:grid;grid-template-columns:minmax(88px,26%) 1fr auto;align-items:center;gap:10px}
+  .crow .cname{font-size:12.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ctrack{position:relative;height:20px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+  .ctrack .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line-2)}
+  .cbar{position:absolute;top:3px;bottom:3px;border-radius:4px}
+  .cbar.up{background:var(--good)}
+  .cbar.down{background:var(--bad)}
+  .cbar.flat{background:var(--ink-3);left:calc(50% - 1px);width:2px}
+  .crow .cdelta{font-size:12.5px;font-weight:650;font-variant-numeric:tabular-nums;min-width:62px;text-align:right}
+  .cdelta.up{color:var(--good)}
+  .cdelta.down{color:var(--bad)}
+  .cdelta.flat{color:var(--ink-3)}
+
+  .cmp-tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .cmp-tbl th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-3);padding:0 10px 8px 0;border-bottom:1px solid var(--line)}
+  .cmp-tbl td{padding:9px 10px 9px 0;border-bottom:1px solid var(--line);color:var(--ink-2);vertical-align:top}
+  .cmp-tbl td.m{color:var(--ink);font-weight:600}
+  .cmp-tbl tr:last-child td{border-bottom:none}
+  .cmp-tbl .num{font-variant-numeric:tabular-nums}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-radius:20px;padding:2px 8px}
+  .tag.up{color:var(--good);background:var(--good-weak)}
+  .tag.down{color:var(--bad);background:var(--bad-weak)}
+  .tag.flat{color:var(--ink-3);background:var(--surface-2)}
+  .tag.new{color:var(--accent);background:var(--accent-weak)}
+  .tag.gone{color:var(--ink-3);background:var(--surface-2)}
+  .cmp-carry{display:flex;flex-direction:column;gap:10px}
+  .carry{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ink-2);line-height:1.5}
+  .carry .ct{font-weight:600;color:var(--ink)}
+  .cmp-ai{white-space:pre-wrap;font-size:13.5px;line-height:1.62;color:var(--ink-2)}
+  /* Stacked on narrow screens the "compared with" separator strands beside one
+     select, so the two labelled dropdowns carry the meaning on their own. */
+  @media(max-width:640px){
+    .cmp-pick{flex-direction:column;align-items:stretch;gap:12px}
+    .cmp-pick .fld{flex:1 1 auto}
+    .cmp-vs{display:none}
+    .crow{grid-template-columns:minmax(74px,34%) 1fr auto;gap:8px}
+    .crow .cname{font-size:12px}
+    .cmp-tbl{font-size:12.5px}
+  }
   .or{margin:20px 0 12px;color:var(--ink-3);font-size:13px}
   textarea#paste{width:100%;border:1px solid var(--line-2);background:var(--surface);border-radius:14px;resize:vertical;min-height:118px;padding:14px 15px;font-size:14.5px;line-height:1.6;color:var(--ink);outline:none;text-align:left}
   textarea#paste::placeholder{color:var(--ink-3)}
@@ -316,6 +373,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
           Briefings
         </button>
+        <button class="nav-item" id="nav-compare">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+          Compare <span class="ready-pill">New</span>
+        </button>
         <button class="nav-item soon" data-soon="Shopify connect">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/></svg>
           Shopify Connect <span class="soon-pill">Soon</span>
@@ -449,6 +510,14 @@ Deep Sleep stock: 41 units left."></textarea>
           </div>
         </section>
 
+        <!-- COMPARE -->
+        <section class="view" id="view-compare">
+          <div class="home">
+            <div class="greet"><h2>Compare</h2><p id="cmp-sub">See what moved between two briefings.</p></div>
+            <div id="cmp-body"></div>
+          </div>
+        </section>
+
       </div>
     </div>
   </div>
@@ -511,6 +580,7 @@ Deep Sleep stock: 41 units left."></textarea>
   var TOOLS=[
     {live:true,action:"build",name:"Daily Briefing",desc:"Turn your numbers into a what/why/what-next briefing.",icon:'<path d="M4 19V9l8-6 8 6v10a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/>'},
     {live:true,action:"chat",name:"AI Consultant",desc:"Chat with an AI that knows your numbers and tells you what to do next.",icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
+    {live:true,action:"compare",name:"Compare",desc:"Put two briefings side by side and see exactly what moved.",icon:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
     {name:"Shopify Connect",desc:"Auto-pull orders daily — no manual export.",icon:'<path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/>'},
     {name:"Stripe",desc:"Bring in payments, refunds and MRR.",icon:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>'},
     {name:"Google Sheets",desc:"Sync a sheet and brief on it automatically.",icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/>'},
@@ -540,11 +610,12 @@ Deep Sleep stock: 41 units left."></textarea>
   function showView(v){
     $$(".view").forEach(function(el){el.classList.remove("on")});
     $("#view-"+v).classList.add("on");
-    $("#page-title").textContent = v==="home"?"Dashboard":v==="upload"?"New briefing":v==="chat"?"Consultant":"Today's briefing";
+    $("#page-title").textContent = v==="home"?"Dashboard":v==="upload"?"New briefing":v==="chat"?"Consultant":v==="history"?"Briefings":v==="compare"?"Compare":"Today's briefing";
     $("#new-briefing").style.display = (v==="briefing")?"":"none";
     closeSidebar(); window.scrollTo(0,0);
     if(v==="home"){ renderHome(); }
     if(v==="history"){ renderHistory(); }
+    if(v==="compare"){ renderCompare(); }
   }
   function renderHistory(){
     var reps=load(LS.reports,[]);
@@ -552,6 +623,183 @@ Deep Sleep stock: 41 units left."></textarea>
     $("#hist-sub").textContent=reps.length+" briefing"+(reps.length>1?"s":"")+" saved on this device.";
     $("#history-list").innerHTML=reps.map(function(r){return '<button class="rep" data-id="'+r.id+'"><div><div class="rl">'+esc(r.label)+'</div><div class="rd">'+esc(r.date)+'</div></div><span class="rh">View →</span></button>'}).join("");
     $$("#history-list .rep").forEach(function(el){el.addEventListener("click",function(){ var r=load(LS.reports,[]).find(function(x){return String(x.id)===el.getAttribute("data-id")}); if(r){ lastRaw=r.raw||""; render(r.briefing,{}); } })});
+  }
+
+  /* ---------- compare ---------- */
+  // Briefing metric values are display strings ("+14%", "$4,210", "62"), so a
+  // delta is only meaningful when both sides parse AND carry the same unit.
+  // Anything else is reported as not comparable rather than guessed at.
+  function parseVal(s){
+    if(s==null) return null;
+    var raw=String(s).trim();
+    var unit = /%/.test(raw) ? "%" : (/[$€£]/.test(raw) ? "money" : "count");
+    var m=raw.replace(/,/g,"").match(/-?\d+(\.\d+)?/);
+    if(!m) return null;
+    var n=parseFloat(m[0]);
+    if(!isFinite(n)) return null;
+    if(/^\(.*\)$/.test(raw)) n=-n;          // (120) accounting negative
+    return {n:n,unit:unit,raw:raw};
+  }
+  function normName(s){return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}
+  // Does a rising number help this business? Derived from the model's own
+  // positive flag on the newer briefing, so falling costs read as good.
+  function polarity(m){
+    if(!m||m.direction==="flat"||typeof m.positive!=="boolean") return 0;
+    return ((m.direction==="up")===m.positive) ? 1 : -1;
+  }
+  function fmtDelta(d,unit){
+    var sign=d>0?"+":"";
+    if(unit==="%") return sign+(Math.round(d*10)/10)+" pp";
+    if(unit==="money") return sign+(Math.round(d*100)/100).toLocaleString();
+    return sign+(Math.round(d*100)/100).toLocaleString();
+  }
+
+  function diffBriefings(newer,older){
+    var A=(newer.what_changed||[]), B=(older.what_changed||[]);
+    var bByName={}; B.forEach(function(m){bByName[normName(m.metric)]=m});
+    var aNames={};
+    var rows=[];
+    A.forEach(function(m){
+      var key=normName(m.metric); aNames[key]=1;
+      var prev=bByName[key];
+      if(!prev){ rows.push({metric:m.metric,status:"new",now:m.value,then:null}); return; }
+      var pn=parseVal(m.value), pp=parseVal(prev.value);
+      var comparable = pn && pp && pn.unit===pp.unit;
+      var delta = comparable ? (pn.n-pp.n) : null;
+      // Metrics carry different units, so the chart scales on percent change.
+      // Absolute deltas would put a $520 revenue move and a 4-order move on the
+      // same axis, which reads as if orders barely mattered.
+      var pct = (comparable && pp.n!==0) ? (delta/Math.abs(pp.n))*100 : null;
+      rows.push({
+        metric:m.metric, status:"both", now:m.value, then:prev.value,
+        comparable:!!comparable,
+        delta: delta,
+        pct: pct,
+        unit: comparable ? pn.unit : null,
+        polarity: polarity(m)
+      });
+    });
+    B.forEach(function(m){ if(!aNames[normName(m.metric)]) rows.push({metric:m.metric,status:"gone",now:null,then:m.value}); });
+    return rows;
+  }
+
+  function chartHtml(rows){
+    var movers=rows.filter(function(r){return r.comparable && r.pct!==null && r.pct!==0});
+    if(!movers.length) return '<div class="empty">No metric moved by an amount these two briefings can be compared on.</div>';
+    var max=Math.max.apply(null,movers.map(function(r){return Math.abs(r.pct)}));
+    movers.sort(function(a,b){return Math.abs(b.pct)-Math.abs(a.pct)});
+    return '<div class="chart">'+movers.map(function(r){
+      var w=max?Math.max(2,Math.abs(r.pct)/max*48):0;      // half-width each side, floor so small moves stay visible
+      var up=r.pct>0;
+      var good = r.polarity===0 ? null : ((up&&r.polarity>0)||(!up&&r.polarity<0));
+      var cls = good===null ? "flat" : (good?"up":"down");
+      var style = up ? 'left:50%;width:'+w+'%' : 'right:50%;width:'+w+'%';
+      var lbl=(up?"+":"")+(Math.round(r.pct*10)/10)+"%";
+      return '<div class="crow"><div class="cname" title="'+esc(r.metric)+'">'+esc(r.metric)+'</div>'
+        +'<div class="ctrack"><span class="mid"></span><span class="cbar '+cls+'" style="'+style+'"></span></div>'
+        +'<div class="cdelta '+cls+'">'+esc(lbl)+'</div></div>';
+    }).join("")+'</div>';
+  }
+
+  function tableHtml(rows){
+    if(!rows.length) return '<div class="empty">Neither briefing listed any metrics.</div>';
+    return '<table class="cmp-tbl"><thead><tr><th>Metric</th><th>Earlier</th><th>Later</th><th>Change</th></tr></thead><tbody>'
+      +rows.map(function(r){
+        var change;
+        if(r.status==="new") change='<span class="tag new">New</span>';
+        else if(r.status==="gone") change='<span class="tag gone">Dropped</span>';
+        else if(!r.comparable) change='<span class="tag flat">Not comparable</span>';
+        else if(r.delta===0) change='<span class="tag flat">No change</span>';
+        else {
+          var up=r.delta>0;
+          var good=r.polarity===0?null:((up&&r.polarity>0)||(!up&&r.polarity<0));
+          var cls=good===null?"flat":(good?"up":"down");
+          var abs=fmtDelta(Math.abs(r.delta),r.unit).replace(/^\+/,"");
+          var pctTxt=(r.pct===null)?"":" ("+(up?"+":"−")+(Math.round(Math.abs(r.pct)*10)/10)+"%)";
+          change='<span class="tag '+cls+'">'+(up?"▲":"▼")+" "+esc(abs+pctTxt)+'</span>';
+        }
+        return '<tr><td class="m">'+esc(r.metric)+'</td><td class="num">'+esc(r.then==null?"—":r.then)
+          +'</td><td class="num">'+esc(r.now==null?"—":r.now)+'</td><td>'+change+'</td></tr>';
+      }).join("")+'</tbody></table>';
+  }
+
+  function carryHtml(newer,older){
+    var out=[];
+    function line(label,a,b){
+      var an=(a&&a.title)||"", bn=(b&&b.title)||"";
+      if(!an&&!bn) return;
+      var same=normName(an)===normName(bn);
+      out.push('<div class="carry"><span class="tag '+(same?"down":"new")+'">'+(same?"Still open":"Changed")+'</span>'
+        +'<div><span class="ct">'+esc(label)+':</span> '+esc(an||"—")
+        +(same?'':' <span style="color:var(--ink-3)">(was: '+esc(bn||"—")+')</span>')+'</div></div>');
+    }
+    line("Risk",newer.risk,older.risk);
+    line("Opportunity",newer.opportunity,older.opportunity);
+    return out.length?'<div class="cmp-carry">'+out.join("")+'</div>':'<div class="empty">Neither briefing flagged a risk or opportunity.</div>';
+  }
+
+  var HEALTH_LBL={good:"Good",watch:"Watch",at_risk:"Needs attention"};
+  function renderCompare(){
+    var reps=load(LS.reports,[]);
+    var body=$("#cmp-body");
+    if(reps.length<2){
+      $("#cmp-sub").textContent="Compare needs two briefings.";
+      body.innerHTML='<div class="cmp-card"><h3>Not enough briefings yet</h3><p class="note">You have '+reps.length+'. Build one more and this fills in automatically — nothing to set up.</p><button class="btn primary" id="cmp-build">Build a briefing →</button></div>';
+      var cb=$("#cmp-build"); if(cb) cb.addEventListener("click",goBuild);
+      return;
+    }
+    $("#cmp-sub").textContent="See what moved between two briefings.";
+    var opts=reps.map(function(r,i){return '<option value="'+r.id+'">'+esc(r.label)+' · '+esc(r.date)+'</option>'}).join("");
+    body.innerHTML=''
+      +'<div class="cmp-pick">'
+      +  '<div class="fld"><label>Earlier</label><select id="cmp-b">'+opts+'</select></div>'
+      +  '<div class="cmp-vs">compared with</div>'
+      +  '<div class="fld"><label>Later</label><select id="cmp-a">'+opts+'</select></div>'
+      +'</div><div id="cmp-out"></div>';
+    $("#cmp-a").value=String(reps[0].id);
+    $("#cmp-b").value=String(reps[1].id);
+    $("#cmp-a").addEventListener("change",paintCompare);
+    $("#cmp-b").addEventListener("change",paintCompare);
+    paintCompare();
+  }
+
+  function paintCompare(){
+    var reps=load(LS.reports,[]);
+    var byId=function(id){return reps.find(function(r){return String(r.id)===String(id)})};
+    var ra=byId($("#cmp-a").value), rb=byId($("#cmp-b").value);
+    var out=$("#cmp-out");
+    if(!ra||!rb){out.innerHTML='<div class="empty">Pick two briefings.</div>';return}
+    if(ra.id===rb.id){out.innerHTML='<div class="empty">Those are the same briefing — pick two different ones.</div>';return}
+    var A=ra.briefing||{}, B=rb.briefing||{};
+    var ha=(A.summary&&A.summary.health)||null, hb=(B.summary&&B.summary.health)||null;
+    var ca=(A.why&&A.why.confidence)||null, cb=(B.why&&B.why.confidence)||null;
+    var rows=diffBriefings(A,B);
+    var comparable=rows.filter(function(r){return r.comparable}).length;
+
+    out.innerHTML=''
+      +'<div class="cmp-head">'
+      +  '<div class="cmp-h"><div class="k">Business health</div><div class="v">'+esc(HEALTH_LBL[hb]||"—")+'<span class="arrow">→</span>'+esc(HEALTH_LBL[ha]||"—")+'</div></div>'
+      +  '<div class="cmp-h"><div class="k">Confidence in the why</div><div class="v">'+esc(cb||"—")+'<span class="arrow">→</span>'+esc(ca||"—")+'</div></div>'
+      +  '<div class="cmp-h"><div class="k">Metrics compared</div><div class="v">'+comparable+' of '+rows.length+'</div></div>'
+      +'</div>'
+      +'<div class="cmp-card"><h3>What moved</h3><p class="note">Percent change, so metrics in different units sit on the same scale. Bars run right when a number rose and left when it fell. Green means the move is good for the business, so falling refunds read green.</p>'+chartHtml(rows)+'</div>'
+      +'<div class="cmp-card"><h3>Every metric</h3><p class="note">Values come straight from the two briefings. Where the two sides use different units, the change is left blank rather than guessed.</p>'+tableHtml(rows)+'</div>'
+      +'<div class="cmp-card"><h3>Risk &amp; opportunity</h3><p class="note">Whether the same thing is still flagged, or something else took its place.</p>'+carryHtml(A,B)+'</div>'
+      +'<div class="cmp-card"><h3>Consultant read</h3><p class="note">A written take on what changed between these two and what to do about it. Uses one AI call.</p>'
+      +  '<button class="btn primary" id="cmp-ask">Ask the consultant →</button><div id="cmp-ai" style="margin-top:14px"></div></div>';
+
+    $("#cmp-ask").addEventListener("click",function(){ askCompare(ra,rb); });
+  }
+
+  function askCompare(ra,rb){
+    var btn=$("#cmp-ask"), box=$("#cmp-ai");
+    btn.disabled=true; btn.textContent="Reading both briefings…";
+    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({mode:"compare",newer:ra.briefing,older:rb.briefing,newerLabel:ra.label,olderLabel:rb.label,accessCode:accessCode})})
+      .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j&&j.error)||"unreachable");return j})})
+      .then(function(d){ if(d.error) throw new Error(d.error); box.innerHTML='<div class="cmp-ai">'+esc(d.answer||"")+'</div>'; })
+      .catch(function(err){ box.innerHTML='<div class="empty">'+esc(String((err&&err.message)||"Couldn't reach the consultant."))+'</div>'; })
+      .then(function(){ btn.disabled=false; btn.textContent="Ask the consultant →"; });
   }
 
   function greetWord(){var h=new Date().getHours();return h<12?"Good morning":h<18?"Good afternoon":"Good evening";}
@@ -587,6 +835,7 @@ Deep Sleep stock: 41 units left."></textarea>
     }).join("");
     $$('#tools [data-action="build"]').forEach(function(b){b.addEventListener("click",goBuild)});
     $$('#tools [data-action="chat"]').forEach(function(b){b.addEventListener("click",openChat)});
+    $$('#tools [data-action="compare"]').forEach(function(b){b.addEventListener("click",function(){showView("compare")})});
     $$("#tools [data-soon]").forEach(function(b){b.addEventListener("click",function(){toast(b.getAttribute("data-soon")+" is coming soon.")})});
     // recents
     if(!reps.length){ $("#recents").innerHTML='<div class="empty">No briefings yet — build your first one above.</div>'; }
@@ -836,6 +1085,7 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#cta-shopify").addEventListener("click",pullShopify);
   $("#nav-consultant").addEventListener("click",openChat);
   $("#nav-history").addEventListener("click",function(){showView("history")});
+  $("#nav-compare").addEventListener("click",function(){showView("compare")});
   $("#chat-send").addEventListener("click",chatSend);
   $("#chat-in").addEventListener("keydown",function(e){ if(e.key==="Enter") chatSend(); });
   $("#cta-sample").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});

@@ -109,6 +109,21 @@ STYLE:
 - recommendations: 2-3 concrete, specific next steps with a realistic effort estimate. No vague advice.
 - Calm, direct, non-technical throughout.`;
 
+const COMPARE_SYSTEM = `You are the analyst behind a business owner's daily briefings. They are looking at two briefings side by side and want to know what actually changed between them.
+
+Write 4 short paragraphs, plain language, no headings, no bullet points, no markdown:
+1. The headline movement between the two, in one or two sentences.
+2. The metrics that moved most, with the actual before and after figures from the briefings.
+3. Whether the risk and opportunity are the same as before or have shifted, and what that means.
+4. The one or two things worth doing now because of what changed.
+
+TRUTHFULNESS — a single invented figure destroys the product:
+- Use only figures that appear in the two briefings given to you. Never compute a number you cannot derive from them, and never invent one.
+- The two briefings may cover different periods and may not be directly comparable. If the metric labels or units don't line up, say so plainly instead of forcing a comparison.
+- These briefings summarise data you cannot see. Do not claim a cause (ads, traffic, seasonality, promotions) that isn't already stated in one of them.
+- If the two briefings are too different to compare usefully, say that in the first paragraph and keep the rest short.
+- Refer to the two briefings by the labels given, not as "briefing A" and "briefing B".`;
+
 const ASK_SYSTEM = `You are the analyst behind a business owner's daily briefing. Answer their follow-up question using ONLY the briefing and the underlying data provided. Be direct and plain-language, 1-3 short sentences. If the data doesn't contain what's needed to answer, say so honestly rather than guessing — do not invent numbers or causes.`;
 
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
@@ -195,6 +210,23 @@ export async function onRequestPost(context) {
         `The owner asks: ${question}\n\nAnswer using only the above.`;
 
       const out = await callClaude(env, { system: ASK_SYSTEM, userMsg });
+      if (out.error) return out.error;
+      return json({ answer: out.text.trim() }, 200);
+    }
+
+    // ---- Compare mode ------------------------------------------------------
+    if (reqBody.mode === "compare") {
+      const newer = reqBody.newer, older = reqBody.older;
+      if (!newer || !older) return json({ error: "Pick two briefings to compare." }, 400);
+      const newerLabel = String(reqBody.newerLabel || "the later briefing").slice(0, 80);
+      const olderLabel = String(reqBody.olderLabel || "the earlier briefing").slice(0, 80);
+
+      const userMsg =
+        `Earlier briefing — "${olderLabel}" (JSON):\n"""\n${JSON.stringify(older)}\n"""\n\n` +
+        `Later briefing — "${newerLabel}" (JSON):\n"""\n${JSON.stringify(newer)}\n"""\n\n` +
+        `Compare them for the owner, following the rules exactly.`;
+
+      const out = await callClaude(env, { system: COMPARE_SYSTEM, userMsg });
       if (out.error) return out.error;
       return json({ answer: out.text.trim() }, 200);
     }
