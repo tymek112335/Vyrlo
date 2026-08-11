@@ -96,6 +96,11 @@ TRUTHFULNESS — this is the whole product; a single made-up claim destroys trus
 - The risk and opportunity must be grounded in the uploaded data. An inventory-runout risk needs stock levels; a cross-sell opportunity needs order/line-item detail. If the data can't support a genuine risk or opportunity, say so plainly in the title/detail rather than inventing one.
 - Ground every figure in what was provided. Do not fabricate numbers.
 
+IF THE DATA IS A SCREENSHOT OR IMAGE (e.g. a photo of an analytics dashboard):
+- Read only the figures you can actually see. If a number is cut off, blurred, or ambiguous, do not guess it — leave it out and say in why.reasoning that part of the image wasn't legible.
+- A dashboard screenshot usually shows totals without the underlying breakdown. That means you normally CANNOT explain why a metric moved: set why.confidence to "low" and say plainly that the screenshot shows totals only.
+- Do not assume a date range, comparison period, or currency that isn't visible in the image.
+
 STYLE:
 - summary.headline: one short, human line ("Yesterday was a strong day.", "A quieter day, with one thing to watch.").
 - summary.body: ONE plain paragraph, no jargon, lead with the business outcome.
@@ -105,6 +110,21 @@ STYLE:
 - Calm, direct, non-technical throughout.`;
 
 const ASK_SYSTEM = `You are the analyst behind a business owner's daily briefing. Answer their follow-up question using ONLY the briefing and the underlying data provided. Be direct and plain-language, 1-3 short sentences. If the data doesn't contain what's needed to answer, say so honestly rather than guessing — do not invent numbers or causes.`;
+
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+
+// Returns a {media_type, data} pair only if it's a supported image within the
+// size limit; anything else returns null so the caller can reject it cleanly.
+function validImage(img) {
+  if (!img || typeof img !== "object") return null;
+  const media_type = String(img.media_type || "").toLowerCase();
+  const data = String(img.data || "");
+  if (!IMAGE_TYPES.includes(media_type)) return null;
+  if (!data || !/^[A-Za-z0-9+/=]+$/.test(data)) return null;
+  if (data.length * 0.75 > MAX_IMAGE_BYTES) return null;
+  return { media_type, data };
+}
 
 function json(obj, status) {
   return new Response(JSON.stringify(obj), {
@@ -182,12 +202,21 @@ export async function onRequestPost(context) {
     // ---- Briefing mode -----------------------------------------------------
     const rawText = (reqBody.rawText || "").trim();
     const period = reqBody.period || "";
-    if (!rawText) return json({ error: "Add some data first." }, 400);
+    const image = validImage(reqBody.image);
+    if (!rawText && !image) return json({ error: "Add some data first." }, 400);
+    if (reqBody.image && !image) return json({ error: "That image couldn't be read — use a PNG, JPEG, GIF or WebP under 4MB." }, 400);
 
-    const userMsg =
+    const prompt =
       (period ? `Period: ${period}\n\n` : "") +
-      `The owner's business data:\n"""\n${rawText}\n"""\n\n` +
+      (image ? `The owner uploaded a screenshot of their business data.\n\n` : "") +
+      (rawText ? `The owner's business data:\n"""\n${rawText}\n"""\n\n` : "") +
       `Write today's briefing as JSON matching the required schema. Follow the truthfulness rules exactly.`;
+
+    // An image needs content blocks; plain text can stay a bare string.
+    const userMsg = image
+      ? [{ type: "image", source: { type: "base64", media_type: image.media_type, data: image.data } },
+         { type: "text", text: prompt }]
+      : prompt;
 
     const out = await callClaude(env, { system: BRIEFING_SYSTEM, userMsg, schema: BRIEFING_SCHEMA });
     if (out.error) return out.error;

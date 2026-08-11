@@ -162,6 +162,8 @@
   .drop p{margin:0;color:var(--ink-3);font-size:13px}
   .drop .file{margin-top:10px;font-size:12.5px;font-weight:560;color:var(--accent)}
   .fmt{display:flex;gap:14px;justify-content:center;margin-top:14px;color:var(--ink-3);font-size:12px;flex-wrap:wrap}
+  #shot-preview{display:block;max-width:100%;max-height:190px;margin:12px auto 0;border-radius:10px;border:1px solid var(--line-2)}
+  #shot-preview[hidden]{display:none}
   .or{margin:20px 0 12px;color:var(--ink-3);font-size:13px}
   textarea#paste{width:100%;border:1px solid var(--line-2);background:var(--surface);border-radius:14px;resize:vertical;min-height:118px;padding:14px 15px;font-size:14.5px;line-height:1.6;color:var(--ink);outline:none;text-align:left}
   textarea#paste::placeholder{color:var(--ink-3)}
@@ -403,11 +405,12 @@
             <div class="drop" id="drop">
               <div class="di">📄</div>
               <h3>Drop your data here</h3>
-              <p>CSV or Excel export — orders, sales, whatever you've got</p>
+              <p>CSV, Excel export, or a screenshot of your dashboard — you can also paste a screenshot with ⌘V</p>
               <div class="file" id="filename"></div>
-              <div class="fmt"><span>✓ CSV</span><span>✓ Excel</span><span>✓ Sheets export</span></div>
+              <img id="shot-preview" alt="Screenshot preview" hidden>
+              <div class="fmt"><span>✓ CSV</span><span>✓ Excel</span><span>✓ Sheets export</span><span>✓ Screenshot</span></div>
             </div>
-            <input type="file" id="fileinput" accept=".csv,.tsv,.txt,.xls,.xlsx" hidden>
+            <input type="file" id="fileinput" accept=".csv,.tsv,.txt,.xls,.xlsx,image/png,image/jpeg,image/gif,image/webp" hidden>
             <div class="or">— or paste your numbers —</div>
             <textarea id="paste" placeholder="e.g.  Yesterday: revenue $4,210 (up from $3,690). 62 orders, AOV $68.
 Deep Sleep bundle: 24 sold. Evening Reset: 11. Morning Focus: 8.
@@ -500,7 +503,7 @@ Deep Sleep stock: 41 units left."></textarea>
   var settings=load(LS.settings,{name:"",email:false,time:"08:00"});
   function applyTheme(t){document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light");try{localStorage.setItem("vyrlo.theme",t)}catch(e){}var tb=document.querySelector("#theme-toggle");if(tb)tb.textContent=t==="dark"?"☀️":"🌙";}
   applyTheme((function(){try{return localStorage.getItem("vyrlo.theme")}catch(e){return null}})()||"light");
-  var lastRaw="", pendingFileText="";
+  var lastRaw="", pendingFileText="", pendingImage=null;
   var accessCode=(function(){try{return localStorage.getItem("vyrlo.access")||""}catch(e){return ""}})();
   function freeUsed(){try{return !!localStorage.getItem("vyrlo.freeUsed")}catch(e){return false}}
   function markFreeUsed(){try{localStorage.setItem("vyrlo.freeUsed","1")}catch(e){}}
@@ -712,13 +715,20 @@ Deep Sleep stock: 41 units left."></textarea>
   function generate(){
     if(!accessCode && freeUsed()){ showGate(); return; }
     var raw=currentRaw();
-    if(!raw){$("#paste").focus();$("#paste").style.borderColor="var(--bad)";setTimeout(function(){$("#paste").style.borderColor=""},1200);return}
+    if(!raw&&!pendingImage){$("#paste").focus();$("#paste").style.borderColor="var(--bad)";setTimeout(function(){$("#paste").style.borderColor=""},1200);return}
     settings.name=$("#name").value.trim()||settings.name;save(LS.settings,settings);
     lastRaw=raw;var period=$("#period").value.trim();var started=Date.now();startAnalyze();
-    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rawText:raw,period:period,name:settings.name,accessCode:accessCode})})
-      .then(function(r){if(!r.ok)throw new Error("bad");return r.json()})
+    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rawText:raw,image:pendingImage,period:period,name:settings.name,accessCode:accessCode})})
+      .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j&&j.error)||"unreachable");return j})})
       .then(function(b){if(b.error)throw new Error(b.error);if(!accessCode)markFreeUsed();var w=Math.max(0,2200-(Date.now()-started));setTimeout(function(){finishAnalyze(function(){saveReport(b,period);render(b,{})})},w)})
-      .catch(function(){var w=Math.max(0,2200-(Date.now()-started));setTimeout(function(){finishAnalyze(function(){render(SAMPLE,{preview:true})})},w)});
+      .catch(function(err){
+        // A message from the server (bad image, no data) is real feedback — show it.
+        // Only fall back to the sample when the engine genuinely can't be reached.
+        var msg=String((err&&err.message)||"");
+        var known=msg&&msg!=="unreachable"&&!/failed to fetch|networkerror|json/i.test(msg);
+        var w=Math.max(0,2200-(Date.now()-started));
+        setTimeout(function(){finishAnalyze(function(){ if(known){toast(msg);showView("upload")} else {render(SAMPLE,{preview:true})} })},w);
+      });
   }
   function pullShopify(){
     if(!accessCode){ showGate(); return; }
@@ -736,8 +746,40 @@ Deep Sleep stock: 41 units left."></textarea>
   }
 
   /* ---------- files ---------- */
+  function clearShot(){pendingImage=null;var p=$("#shot-preview");if(p){p.hidden=true;p.removeAttribute("src")}}
+
+  // Screenshots get downscaled and re-encoded as JPEG before upload: dashboard
+  // grabs are often 3000px+, which is far past what the model needs to read the
+  // numbers and would blow the 4MB payload limit.
+  var MAX_SHOT_DIM=1568;
+  function handleImage(file){
+    clearShot();
+    var url=URL.createObjectURL(file);
+    var img=new Image();
+    img.onload=function(){
+      var w=img.naturalWidth,h=img.naturalHeight;
+      var scale=Math.min(1,MAX_SHOT_DIM/Math.max(w,h));
+      var cw=Math.max(1,Math.round(w*scale)),ch=Math.max(1,Math.round(h*scale));
+      var cv=document.createElement("canvas");cv.width=cw;cv.height=ch;
+      var cx=cv.getContext("2d");
+      cx.fillStyle="#fff";cx.fillRect(0,0,cw,ch); // flatten transparency for JPEG
+      cx.drawImage(img,0,0,cw,ch);
+      URL.revokeObjectURL(url);
+      var dataUrl;
+      try{dataUrl=cv.toDataURL("image/jpeg",0.92)}catch(e){$("#filename").textContent="📎 Couldn't read that image — try a PNG or JPEG.";return}
+      pendingImage={media_type:"image/jpeg",data:dataUrl.split(",")[1]};
+      pendingFileText="";
+      $("#filename").textContent="🖼 "+(file.name||"Pasted screenshot")+" — ready";
+      var p=$("#shot-preview");if(p){p.src=dataUrl;p.hidden=false}
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);$("#filename").textContent="📎 Couldn't read that image — try a PNG or JPEG."};
+    img.src=url;
+  }
+
   function handleFile(file){
     if(!file)return;
+    if(/^image\//.test(file.type||"")){handleImage(file);return}
+    clearShot();
     $("#filename").textContent="📎 "+file.name;
     var ext=(file.name.split(".").pop()||"").toLowerCase();
     if(ext==="xls"||ext==="xlsx"){pendingFileText="";$("#filename").textContent="📎 "+file.name+" — please export as CSV to read it here";return}
@@ -769,7 +811,7 @@ Deep Sleep stock: 41 units left."></textarea>
       .then(function(d){ if(d&&d.ok){ accessCode=code; try{localStorage.setItem("vyrlo.access",code)}catch(e){} hideGate(); toast("Unlocked — unlimited briefings."); if(currentBriefing && $("#view-briefing").classList.contains("on")) render(currentBriefing,{}); } else { $("#gate-err").textContent="That code isn't right."; } })
       .catch(function(){ $("#gate-err").textContent="Couldn't check the code — try again."; });
   }
-  function goBuild(){ if(!accessCode && freeUsed()){ showGate(); return; } pendingFileText="";$("#filename").textContent=""; showView("upload"); }
+  function goBuild(){ if(!accessCode && freeUsed()){ showGate(); return; } pendingFileText="";clearShot();$("#filename").textContent=""; showView("upload"); }
 
   /* ---------- wire ---------- */
   var chatMsgs=[];
@@ -822,6 +864,19 @@ Deep Sleep stock: 41 units left."></textarea>
   ["dragover","dragenter"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("drag")})});
   ["dragleave","dragend","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("drag")})});
   drop.addEventListener("drop",function(e){if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0])});
+
+  // Paste a screenshot straight into the upload view (⌘V / Ctrl+V).
+  document.addEventListener("paste",function(e){
+    if(!$("#view-upload").classList.contains("on"))return;
+    var items=(e.clipboardData&&e.clipboardData.items)||[];
+    for(var i=0;i<items.length;i++){
+      if(/^image\//.test(items[i].type)){
+        var f=items[i].getAsFile();
+        if(f){e.preventDefault();handleImage(f);toast("Screenshot added.");}
+        return;
+      }
+    }
+  });
 
   if(settings.name)$("#name").value=settings.name;
   renderHome();
