@@ -203,8 +203,10 @@ export async function onRequestPost(context) {
     const rawText = (reqBody.rawText || "").trim();
     const period = reqBody.period || "";
     const image = validImage(reqBody.image);
-    if (!rawText && !image) return json({ error: "Add some data first." }, 400);
+    // Check the image first: an unreadable image is a specific, fixable problem,
+    // and saying "add some data first" when they clearly added something is wrong.
     if (reqBody.image && !image) return json({ error: "That image couldn't be read — use a PNG, JPEG, GIF or WebP under 4MB." }, 400);
+    if (!rawText && !image) return json({ error: "Add some data first." }, 400);
 
     const prompt =
       (period ? `Period: ${period}\n\n` : "") +
