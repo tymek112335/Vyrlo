@@ -153,10 +153,10 @@ function json(obj, status) {
   });
 }
 
-async function callClaude(env, { system, userMsg, schema }) {
+async function callClaude(env, { system, userMsg, schema, maxTokens }) {
   const body = {
     model: "claude-opus-5",
-    max_tokens: 4000,
+    max_tokens: maxTokens || 4000,
     system,
     output_config: { effort: "medium" },
     messages: [{ role: "user", content: userMsg }]
@@ -180,6 +180,12 @@ async function callClaude(env, { system, userMsg, schema }) {
   const data = await resp.json();
   if (data.stop_reason === "refusal") {
     return { error: json({ error: "Couldn't process that input — try rephrasing the data." }, 422) };
+  }
+  if (data.stop_reason === "max_tokens") {
+    // The response was cut off mid-generation, which for schema mode means
+    // invalid JSON. Say so plainly instead of letting JSON.parse throw an
+    // opaque syntax error further down.
+    return { error: json({ error: "The briefing was too long to finish in one pass — try trimming the data a little and generating again." }, 502) };
   }
   // Skip thinking blocks; take the text block.
   const textBlock = (data.content || []).find((b) => b.type === "text");
@@ -257,7 +263,12 @@ export async function onRequestPost(context) {
          { type: "text", text: prompt }]
       : prompt;
 
-    const out = await callClaude(env, { system: BRIEFING_SYSTEM, userMsg, schema: BRIEFING_SCHEMA });
+    // Higher ceiling than the other two modes: the full schema plus the
+    // narrative field can run well past 4000 tokens on a busier input (more
+    // line items, more what_changed entries) — a real case truncated mid-JSON
+    // at ~4000 during testing. Cost scales with tokens actually generated, not
+    // this cap, and the schema itself bounds the shape either way.
+    const out = await callClaude(env, { system: BRIEFING_SYSTEM, userMsg, schema: BRIEFING_SCHEMA, maxTokens: 8000 });
     if (out.error) return out.error;
 
     const briefing = JSON.parse(out.text);
