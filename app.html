@@ -211,6 +211,54 @@
   .carry{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ink-2);line-height:1.5}
   .carry .ct{font-weight:600;color:var(--ink)}
   .cmp-ai{white-space:pre-wrap;font-size:13.5px;line-height:1.62;color:var(--ink-2)}
+
+  .cmp-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  .cmp-bar .chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2);cursor:pointer}
+  .cmp-bar .chk input{accent-color:var(--accent);width:14px;height:14px}
+
+  /* overall direction gauge */
+  .mom-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .mom-label{font-size:20px;font-weight:680;letter-spacing:-.01em}
+  .mom-label.up{color:var(--good)} .mom-label.down{color:var(--bad)} .mom-label.flat{color:var(--warn)}
+  .mom-meta{font-size:12.5px;color:var(--ink-3)}
+  .gauge{position:relative;height:12px;border-radius:8px;overflow:hidden;
+    background:linear-gradient(90deg,var(--bad) 0%,var(--warn) 50%,var(--good) 100%);opacity:.9}
+  .gauge .g-mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.7)}
+  .g-needle{position:absolute;top:-3px;width:3px;height:18px;border-radius:2px;background:var(--ink);
+    box-shadow:0 0 0 2px var(--surface);transform:translateX(-50%)}
+  .g-scale{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:var(--ink-3)}
+
+  /* risk / opportunity detail */
+  .flags{display:flex;flex-direction:column;gap:12px}
+  .flag{border:1px solid var(--line);border-left:3px solid var(--line-2);border-radius:12px;padding:14px 16px;background:var(--surface-2)}
+  .flag.down{border-left-color:var(--bad)}
+  .flag.up{border-left-color:var(--good)}
+  .flag.new{border-left-color:var(--accent)}
+  .flag.gone{border-left-color:var(--ink-3)}
+  .fl-head{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+  .fl-head h4{margin:0;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3)}
+  .fl-title{font-size:14.5px;font-weight:650;color:var(--ink);line-height:1.4;margin-bottom:9px}
+  .fl-warn{font-size:12.5px;color:var(--bad);background:var(--bad-weak);border-radius:8px;padding:7px 10px;margin-bottom:10px}
+  .fl-row{display:grid;grid-template-columns:132px 1fr;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+  .fl-k{font-size:11px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-3);padding-top:2px}
+  .fl-v{font-size:13px;color:var(--ink-2);line-height:1.55}
+  .fl-was{margin-top:5px;font-size:12px;color:var(--ink-3);font-style:italic}
+
+  /* recommendation diff */
+  .recs-cmp{display:flex;flex-direction:column;gap:10px}
+  .rc{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line)}
+  .rc:last-child{border-bottom:none;padding-bottom:0}
+  .rc-b{flex:1;min-width:0}
+  .rc-t{font-size:13.5px;font-weight:620;color:var(--ink);line-height:1.4}
+  .rc-r{font-size:12.5px;color:var(--ink-3);margin-top:2px;line-height:1.45}
+  .rc-e{font-size:11.5px;color:var(--ink-3);white-space:nowrap;padding-top:2px}
+
+  /* narrative + tl;dr */
+  .narr p{font-size:13.5px;line-height:1.68;color:var(--ink-2);margin:0 0 11px}
+  .narr p:last-child{margin-bottom:0}
+  .tldr{margin-top:16px;padding:13px 15px;background:var(--accent-weak);border-radius:12px}
+  .tldr-k{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+  .tldr-v{font-size:13.5px;line-height:1.6;color:var(--ink);font-weight:520}
   /* Stacked on narrow screens the "compared with" separator strands beside one
      select, so the two labelled dropdowns carry the meaning on their own. */
   @media(max-width:640px){
@@ -220,6 +268,9 @@
     .crow{grid-template-columns:minmax(74px,34%) 1fr auto;gap:8px}
     .crow .cname{font-size:12px}
     .cmp-tbl{font-size:12.5px}
+    .fl-row{grid-template-columns:1fr;gap:3px}
+    .cmp-bar #cmp-copy{margin-left:0!important}
+    .mom-label{font-size:17px}
   }
   .or{margin:20px 0 12px;color:var(--ink-3);font-size:13px}
   textarea#paste{width:100%;border:1px solid var(--line-2);background:var(--surface);border-radius:14px;resize:vertical;min-height:118px;padding:14px 15px;font-size:14.5px;line-height:1.6;color:var(--ink);outline:none;text-align:left}
@@ -723,19 +774,166 @@ Deep Sleep stock: 41 units left."></textarea>
       }).join("")+'</tbody></table>';
   }
 
+  // Overall direction: weight each comparable metric by how far it moved, and
+  // score it +1/-1 by whether that move is good for the business. Only metrics
+  // with a known polarity count, and the count is always shown alongside.
+  function momentum(rows){
+    var scored=rows.filter(function(r){return r.comparable && r.pct!==null && r.pct!==0 && r.polarity!==0});
+    if(!scored.length) return null;
+    var totW=0,totS=0,up=0,down=0;
+    scored.forEach(function(r){
+      var w=Math.min(Math.abs(r.pct),100);          // cap so one wild swing can't dominate
+      var good=((r.pct>0&&r.polarity>0)||(r.pct<0&&r.polarity<0))?1:-1;
+      if(good>0)up++;else down++;
+      totW+=w; totS+=w*good;
+    });
+    var score=totW?totS/totW:0;
+    var label = score>=.6?"Clearly improving" : score>=.2?"Improving" : score>-.2?"Mixed" : score>-.6?"Declining" : "Clearly declining";
+    var tone  = score>=.2?"up" : score>-.2?"flat" : "down";
+    return {score:score,label:label,tone:tone,counted:scored.length,total:rows.length,better:up,worse:down};
+  }
+
+  function momentumHtml(m){
+    if(!m) return '<div class="empty">Not enough comparable metrics to call a direction.</div>';
+    var pos=(m.score+1)/2*100;
+    return '<div class="mom">'
+      +'<div class="mom-top"><span class="mom-label '+m.tone+'">'+esc(m.label)+'</span>'
+      +'<span class="mom-meta">'+m.better+' of '+m.counted+' tracked metrics moved the right way</span></div>'
+      +'<div class="gauge"><span class="g-fill"></span><span class="g-mid"></span>'
+      +'<span class="g-needle '+m.tone+'" style="left:'+pos.toFixed(1)+'%"></span></div>'
+      +'<div class="g-scale"><span>Declining</span><span>Mixed</span><span>Improving</span></div>'
+      +'<p class="note" style="margin:10px 0 0">Weighted by how far each metric moved. Based on '+m.counted+' of '+m.total
+      +' metrics, the ones where both briefings agree on units and the direction has a clear good or bad meaning.</p></div>';
+  }
+
+  function flagBlock(label,now,then,fields){
+    var an=(now&&now.title)||"", bn=(then&&then.title)||"";
+    if(!an&&!bn) return "";
+    var status,cls;
+    if(an&&!bn){status="Newly flagged";cls="new"}
+    else if(!an&&bn){status="No longer flagged";cls="gone"}
+    else if(normName(an)===normName(bn)){status=(label==="Risk"?"Still open":"Still there");cls=(label==="Risk"?"down":"up")}
+    else {status="Replaced";cls="new"}
+    var rows=fields.map(function(f){
+      var nv=(now&&now[f.k])||"", ov=(then&&then[f.k])||"";
+      if(!nv&&!ov) return "";
+      var changed=normName(nv)!==normName(ov);
+      return '<div class="fl-row"><div class="fl-k">'+esc(f.label)+'</div>'
+        +'<div class="fl-v">'+esc(nv||"—")
+        +(changed&&ov?'<div class="fl-was">Earlier: '+esc(ov)+'</div>':'')
+        +'</div></div>';
+    }).join("");
+    var persisted = (an&&bn&&normName(an)===normName(bn));
+    return '<div class="flag '+cls+'">'
+      +'<div class="fl-head"><span class="tag '+cls+'">'+esc(status)+'</span><h4>'+esc(label)+'</h4></div>'
+      +'<div class="fl-title">'+esc(an||bn)+'</div>'
+      +(persisted&&label==="Risk"?'<div class="fl-warn">Flagged in both briefings and still not resolved.</div>':'')
+      +rows+'</div>';
+  }
+
   function carryHtml(newer,older){
-    var out=[];
-    function line(label,a,b){
-      var an=(a&&a.title)||"", bn=(b&&b.title)||"";
-      if(!an&&!bn) return;
-      var same=normName(an)===normName(bn);
-      out.push('<div class="carry"><span class="tag '+(same?"down":"new")+'">'+(same?"Still open":"Changed")+'</span>'
-        +'<div><span class="ct">'+esc(label)+':</span> '+esc(an||"—")
-        +(same?'':' <span style="color:var(--ink-3)">(was: '+esc(bn||"—")+')</span>')+'</div></div>');
-    }
-    line("Risk",newer.risk,older.risk);
-    line("Opportunity",newer.opportunity,older.opportunity);
-    return out.length?'<div class="cmp-carry">'+out.join("")+'</div>':'<div class="empty">Neither briefing flagged a risk or opportunity.</div>';
+    var out=[
+      flagBlock("Risk",newer.risk,older.risk,[{k:"detail",label:"Detail"},{k:"action",label:"Suggested action"}]),
+      flagBlock("Opportunity",newer.opportunity,older.opportunity,[{k:"detail",label:"Detail"},{k:"recommendation",label:"Recommendation"},{k:"impact",label:"Potential impact"}])
+    ].filter(Boolean);
+    return out.length?'<div class="flags">'+out.join("")+'</div>':'<div class="empty">Neither briefing flagged a risk or opportunity.</div>';
+  }
+
+  // Recommendations repeated across both briefings usually mean the owner
+  // hasn't got to them yet, which is worth surfacing on its own.
+  function recsHtml(newer,older){
+    var A=(newer.recommendations||[]), B=(older.recommendations||[]);
+    if(!A.length&&!B.length) return '<div class="empty">Neither briefing suggested any actions.</div>';
+    var bByName={}; B.forEach(function(r){bByName[normName(r.title)]=r});
+    var seen={},items=[];
+    A.forEach(function(r){
+      var k=normName(r.title); seen[k]=1;
+      var rep=!!bByName[k];
+      items.push({cls:rep?"down":"new",status:rep?"Still outstanding":"New",title:r.title,reason:r.reason,effort:r.effort});
+    });
+    B.forEach(function(r){ if(!seen[normName(r.title)]) items.push({cls:"gone",status:"Dropped",title:r.title,reason:r.reason,effort:r.effort}); });
+    return '<div class="recs-cmp">'+items.map(function(i){
+      return '<div class="rc"><span class="tag '+i.cls+'">'+esc(i.status)+'</span>'
+        +'<div class="rc-b"><div class="rc-t">'+esc(i.title)+'</div><div class="rc-r">'+esc(i.reason||"")+'</div></div>'
+        +'<span class="rc-e">'+esc(i.effort||"")+'</span></div>';
+    }).join("")+'</div>';
+  }
+
+  /* ---------- written summaries (derived, no AI call) ---------- */
+  function listPhrase(arr){
+    if(!arr.length) return "";
+    if(arr.length===1) return arr[0];
+    if(arr.length===2) return arr[0]+" and "+arr[1];
+    return arr.slice(0,-1).join(", ")+" and "+arr[arr.length-1];
+  }
+  function pctTxt(r){return (r.pct>0?"up ":"down ")+(Math.round(Math.abs(r.pct)*10)/10)+"%"}
+
+  function narrative(A,B,rows,mom,la,lb){
+    var p=[];
+    var movers=rows.filter(function(r){return r.comparable&&r.pct!==null&&r.pct!==0})
+                   .sort(function(a,b){return Math.abs(b.pct)-Math.abs(a.pct)});
+    var good=movers.filter(function(r){return (r.pct>0&&r.polarity>0)||(r.pct<0&&r.polarity<0)});
+    var bad =movers.filter(function(r){return r.polarity!==0 && !((r.pct>0&&r.polarity>0)||(r.pct<0&&r.polarity<0))});
+
+    // 1. direction
+    if(mom) p.push("Comparing "+lb+" with "+la+", the overall direction is "+mom.label.toLowerCase()+". Of the "+mom.counted+
+      " metrics that can be compared across both briefings, "+mom.better+" moved in a way that helps the business and "+mom.worse+" moved against it.");
+    else p.push("Comparing "+lb+" with "+la+". These two briefings don't share enough metrics on the same units to call an overall direction.");
+
+    // 2. movers
+    if(good.length) p.push("The strongest improvements came from "+listPhrase(good.slice(0,3).map(function(r){return r.metric+" ("+pctTxt(r)+", "+r.then+" to "+r.now+")"}))+".");
+    if(bad.length)  p.push("Moving the wrong way: "+listPhrase(bad.slice(0,3).map(function(r){return r.metric+" ("+pctTxt(r)+", "+r.then+" to "+r.now+")"}))+".");
+
+    // 3. health + confidence
+    var ha=(A.summary&&A.summary.health), hb=(B.summary&&B.summary.health);
+    if(ha&&hb) p.push(ha===hb
+      ? "The overall health reading stayed at "+(HEALTH_LBL[ha]||ha).toLowerCase()+" across both."
+      : "The health reading moved from "+(HEALTH_LBL[hb]||hb).toLowerCase()+" to "+(HEALTH_LBL[ha]||ha).toLowerCase()+".");
+    var ca=(A.why&&A.why.confidence), cb=(B.why&&B.why.confidence);
+    if(ca&&cb&&ca!==cb) p.push("Confidence in the explanation went from "+cb+" to "+ca+", which reflects how much detail each upload carried, not how the business itself performed.");
+
+    // 4. risk / opportunity
+    var rA=(A.risk&&A.risk.title)||"", rB=(B.risk&&B.risk.title)||"";
+    if(rA&&rB&&normName(rA)===normName(rB)) p.push("The same risk is still open: "+rA+". It was flagged in both briefings, so it hasn't been dealt with yet.");
+    else if(rA&&rB) p.push("The risk changed from \""+rB+"\" to \""+rA+"\".");
+    else if(rA) p.push("A new risk appeared: "+rA+".");
+    var oA=(A.opportunity&&A.opportunity.title)||"", oB=(B.opportunity&&B.opportunity.title)||"";
+    if(oA&&oB&&normName(oA)===normName(oB)) p.push("The same opportunity is still on the table: "+oA+".");
+    else if(oA&&oB) p.push("The opportunity shifted from \""+oB+"\" to \""+oA+"\".");
+
+    // 5. repeated actions
+    var A_r=(A.recommendations||[]), B_r=(B.recommendations||[]);
+    var bn={}; B_r.forEach(function(r){bn[normName(r.title)]=1});
+    var repeated=A_r.filter(function(r){return bn[normName(r.title)]});
+    if(repeated.length) p.push(listPhrase(repeated.map(function(r){return "\""+r.title+"\""}))+(repeated.length>1?" are":" is")+" still being recommended after appearing in the earlier briefing too.");
+
+    // 6. what this can't tell you
+    var notCmp=rows.filter(function(r){return r.status==="both"&&!r.comparable}).map(function(r){return r.metric});
+    var only=rows.filter(function(r){return r.status!=="both"}).map(function(r){return r.metric});
+    var caveat=[];
+    if(notCmp.length) caveat.push(listPhrase(notCmp)+(notCmp.length>1?" were":" was")+" reported in different units across the two briefings, so no change is shown");
+    if(only.length) caveat.push(listPhrase(only)+(only.length>1?" appear":" appears")+" in only one of them");
+    // Joined with a semicolon: these clauses already contain "and", so listPhrase
+    // would stack three of them into one unreadable sentence.
+    if(caveat.length) p.push("Worth knowing: "+caveat.join("; ")+". These are gaps in what was uploaded, not findings about the business.");
+    return p;
+  }
+
+  function shortSummary(A,B,rows,mom){
+    var movers=rows.filter(function(r){return r.comparable&&r.pct!==null&&r.pct!==0})
+                   .sort(function(a,b){return Math.abs(b.pct)-Math.abs(a.pct)});
+    var top=movers[0];
+    var bits=[];
+    bits.push(mom?"Overall: "+mom.label.toLowerCase()+".":"Overall: not enough shared metrics to call it.");
+    if(top) bits.push("Biggest move was "+top.metric+", "+pctTxt(top)+".");
+    var rA=(A.risk&&A.risk.title)||"", rB=(B.risk&&B.risk.title)||"";
+    // Risk titles are already full sentences ("Deep Sleep stock is running low"),
+    // so lead with the status instead of appending another verb to them.
+    if(rA&&rB&&normName(rA)===normName(rB)) bits.push("Still unresolved: "+rA+".");
+    else if(rA) bits.push("Watch: "+rA+".");
+    var act=(A.recommendations||[])[0];
+    if(act) bits.push("Next: "+act.title+(act.effort?" ("+act.effort+")":"")+".");
+    return bits.join(" ");
   }
 
   var HEALTH_LBL={good:"Good",watch:"Watch",at_risk:"Needs attention"};
@@ -755,12 +953,47 @@ Deep Sleep stock: 41 units left."></textarea>
       +  '<div class="fld"><label>Earlier</label><select id="cmp-b">'+opts+'</select></div>'
       +  '<div class="cmp-vs">compared with</div>'
       +  '<div class="fld"><label>Later</label><select id="cmp-a">'+opts+'</select></div>'
-      +'</div><div id="cmp-out"></div>';
+      +'</div>'
+      +'<div class="cmp-bar">'
+      +  '<button class="btn sm" id="cmp-swap">⇄ Swap</button>'
+      +  '<button class="btn sm" id="cmp-latest">Latest two</button>'
+      +  '<label class="chk"><input type="checkbox" id="cmp-movers"> Only metrics that moved</label>'
+      +  '<button class="btn sm" id="cmp-copy" style="margin-left:auto">Copy comparison</button>'
+      +'</div>'
+      +'<div id="cmp-out"></div>';
     $("#cmp-a").value=String(reps[0].id);
     $("#cmp-b").value=String(reps[1].id);
     $("#cmp-a").addEventListener("change",paintCompare);
     $("#cmp-b").addEventListener("change",paintCompare);
+    $("#cmp-movers").addEventListener("change",paintCompare);
+    $("#cmp-swap").addEventListener("click",function(){
+      var a=$("#cmp-a").value; $("#cmp-a").value=$("#cmp-b").value; $("#cmp-b").value=a; paintCompare();
+    });
+    $("#cmp-latest").addEventListener("click",function(){
+      var r=load(LS.reports,[]); if(r.length<2)return;
+      $("#cmp-a").value=String(r[0].id); $("#cmp-b").value=String(r[1].id); paintCompare();
+    });
+    $("#cmp-copy").addEventListener("click",copyCompare);
     paintCompare();
+  }
+
+  function elapsedBetween(a,b){
+    var ms=Math.abs(Number(a.id)-Number(b.id));
+    if(!isFinite(ms)||ms<=0) return null;
+    var h=ms/36e5;
+    if(h<1) return Math.round(ms/6e4)+" minutes apart";
+    if(h<48) return Math.round(h)+" hour"+(Math.round(h)===1?"":"s")+" apart";
+    return Math.round(h/24)+" days apart";
+  }
+
+  var lastCompareText="";
+  function copyCompare(){
+    if(!lastCompareText){toast("Nothing to copy yet.");return}
+    (navigator.clipboard&&navigator.clipboard.writeText
+      ? navigator.clipboard.writeText(lastCompareText)
+      : Promise.reject())
+      .then(function(){toast("Comparison copied.")})
+      .catch(function(){toast("Couldn't copy — select the text instead.")});
   }
 
   function paintCompare(){
@@ -775,17 +1008,30 @@ Deep Sleep stock: 41 units left."></textarea>
     var ca=(A.why&&A.why.confidence)||null, cb=(B.why&&B.why.confidence)||null;
     var rows=diffBriefings(A,B);
     var comparable=rows.filter(function(r){return r.comparable}).length;
+    var mom=momentum(rows);
+    var moversOnly=!!($("#cmp-movers")&&$("#cmp-movers").checked);
+    var tblRows=moversOnly?rows.filter(function(r){return (r.comparable&&r.pct!==null&&r.pct!==0)||r.status!=="both"}):rows;
+    var gap=elapsedBetween(ra,rb);
+    var para=narrative(A,B,rows,mom,ra.label,rb.label);
+    var brief=shortSummary(A,B,rows,mom);
+    lastCompareText=rb.label+" vs "+ra.label+"\n\n"+para.join("\n\n")+"\n\nIn short: "+brief;
 
     out.innerHTML=''
       +'<div class="cmp-head">'
       +  '<div class="cmp-h"><div class="k">Business health</div><div class="v">'+esc(HEALTH_LBL[hb]||"—")+'<span class="arrow">→</span>'+esc(HEALTH_LBL[ha]||"—")+'</div></div>'
       +  '<div class="cmp-h"><div class="k">Confidence in the why</div><div class="v">'+esc(cb||"—")+'<span class="arrow">→</span>'+esc(ca||"—")+'</div></div>'
       +  '<div class="cmp-h"><div class="k">Metrics compared</div><div class="v">'+comparable+' of '+rows.length+'</div></div>'
+      +  '<div class="cmp-h"><div class="k">Time between</div><div class="v">'+esc(gap||"—")+'</div></div>'
       +'</div>'
+      +'<div class="cmp-card"><h3>Overall direction</h3><p class="note">One read on whether things are heading the right way, across every metric that can be compared.</p>'+momentumHtml(mom)+'</div>'
       +'<div class="cmp-card"><h3>What moved</h3><p class="note">Percent change, so metrics in different units sit on the same scale. Bars run right when a number rose and left when it fell. Green means the move is good for the business, so falling refunds read green.</p>'+chartHtml(rows)+'</div>'
-      +'<div class="cmp-card"><h3>Every metric</h3><p class="note">Values come straight from the two briefings. Where the two sides use different units, the change is left blank rather than guessed.</p>'+tableHtml(rows)+'</div>'
-      +'<div class="cmp-card"><h3>Risk &amp; opportunity</h3><p class="note">Whether the same thing is still flagged, or something else took its place.</p>'+carryHtml(A,B)+'</div>'
-      +'<div class="cmp-card"><h3>Consultant read</h3><p class="note">A written take on what changed between these two and what to do about it. Uses one AI call.</p>'
+      +'<div class="cmp-card"><h3>Every metric</h3><p class="note">Values come straight from the two briefings. Where the two sides use different units, the change is left blank rather than guessed.</p>'+tableHtml(tblRows)+'</div>'
+      +'<div class="cmp-card"><h3>Risk &amp; opportunity</h3><p class="note">The full detail from both briefings, and whether each one is still standing.</p>'+carryHtml(A,B)+'</div>'
+      +'<div class="cmp-card"><h3>Recommended actions</h3><p class="note">Anything still outstanding was suggested in both briefings, which usually means it hasn\'t been done yet.</p>'+recsHtml(A,B)+'</div>'
+      +'<div class="cmp-card"><h3>The full picture</h3><p class="note">Written from the two briefings themselves — no AI call, nothing added.</p>'
+      +  '<div class="narr">'+para.map(function(t){return '<p>'+esc(t)+'</p>'}).join("")+'</div>'
+      +  '<div class="tldr"><div class="tldr-k">In short</div><div class="tldr-v">'+esc(brief)+'</div></div></div>'
+      +'<div class="cmp-card"><h3>Consultant read</h3><p class="note">A second opinion written by the AI rather than derived from the numbers. Uses one AI call.</p>'
       +  '<button class="btn primary" id="cmp-ask">Ask the consultant →</button><div id="cmp-ai" style="margin-top:14px"></div></div>';
 
     $("#cmp-ask").addEventListener("click",function(){ askCompare(ra,rb); });
