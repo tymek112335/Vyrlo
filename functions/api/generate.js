@@ -1,3 +1,5 @@
+import { isValidCode } from "../_lib/access.js";
+
 // Cloudflare Pages Function — POST /api/generate
 // Two modes on one endpoint:
 //   default → turns pasted/uploaded business data into a daily briefing
@@ -202,7 +204,7 @@ export async function onRequestPost(context) {
     // A correct code unlocks unlimited use in the UI. The free-try limit is
     // enforced client-side (browser flag) and bounded by the Anthropic spend cap.
     if (reqBody.mode === "verify") {
-      const ok = !!(env.ACCESS_CODE && String(reqBody.accessCode || "").trim() === env.ACCESS_CODE);
+      const ok = await isValidCode(env, reqBody.accessCode);
       return json({ ok }, 200);
     }
 

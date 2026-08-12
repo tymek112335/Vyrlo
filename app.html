@@ -626,6 +626,8 @@ Deep Sleep stock: 41 units left."></textarea>
         <button class="btn" id="gate-unlock">Unlock</button>
       </div>
       <div class="gate-err" id="gate-err"></div>
+      <div class="gate-or">— or —</div>
+      <button class="btn" id="gate-subscribe">Subscribe — $29/mo →</button>
       <button class="gate-skip" id="gate-dash">Go to your dashboard →</button>
     </div>
   </div>
@@ -1444,13 +1446,38 @@ Deep Sleep stock: 41 units left."></textarea>
     $("#gate").classList.add("on");
   }
   function hideGate(){$("#gate").classList.remove("on")}
+  function unlockWith(code){
+    accessCode=code; try{localStorage.setItem("vyrlo.access",code)}catch(e){}
+    hideGate(); toast("Unlocked — unlimited briefings.");
+    if(currentBriefing && $("#view-briefing").classList.contains("on")) render(currentBriefing,{});
+  }
   function verifyCode(){
     var code=$("#gate-input").value.trim();if(!code)return;
     $("#gate-err").textContent="Checking…";
     fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"verify",accessCode:code})})
       .then(function(r){return r.json()})
-      .then(function(d){ if(d&&d.ok){ accessCode=code; try{localStorage.setItem("vyrlo.access",code)}catch(e){} hideGate(); toast("Unlocked — unlimited briefings."); if(currentBriefing && $("#view-briefing").classList.contains("on")) render(currentBriefing,{}); } else { $("#gate-err").textContent="That code isn't right."; } })
+      .then(function(d){ if(d&&d.ok){ unlockWith(code); } else { $("#gate-err").textContent="That code isn't right."; } })
       .catch(function(){ $("#gate-err").textContent="Couldn't check the code — try again."; });
+  }
+  function startSubscribe(){
+    var btn=$("#gate-subscribe"); btn.disabled=true; btn.textContent="Redirecting…";
+    fetch("/api/checkout",{method:"POST"})
+      .then(function(r){return r.json()})
+      .then(function(d){ if(d&&d.url){ window.location.href=d.url; } else { toast(d.error||"Couldn't start checkout."); btn.disabled=false; btn.textContent="Subscribe — $29/mo →"; } })
+      .catch(function(){ toast("Couldn't start checkout — try again."); btn.disabled=false; btn.textContent="Subscribe — $29/mo →"; });
+  }
+  function checkPaidSession(){
+    var params=new URLSearchParams(window.location.search);
+    var sessionId=params.get("paid_session");
+    if(!sessionId) return;
+    params.delete("paid_session");
+    var clean=window.location.pathname+(params.toString()?"?"+params.toString():"");
+    window.history.replaceState({},"",clean);
+    toast("Confirming your subscription…");
+    fetch("/api/verify-session",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({session_id:sessionId})})
+      .then(function(r){return r.json()})
+      .then(function(d){ if(d&&d.ok&&d.code){ unlockWith(d.code); } else { toast(d.error||"Couldn't confirm the subscription — enter your code manually or contact support."); } })
+      .catch(function(){ toast("Couldn't confirm the subscription — try refreshing."); });
   }
   function goBuild(){ if(!accessCode && freeUsed()){ showGate(); return; } pendingFileText="";clearShot();$("#filename").textContent=""; showView("upload"); }
 
@@ -1495,6 +1522,7 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#nav-unlock").addEventListener("click",showGate);
   $("#gate-try").addEventListener("click",function(){hideGate();showView("home")});
   $("#gate-unlock").addEventListener("click",verifyCode);
+  $("#gate-subscribe").addEventListener("click",startSubscribe);
   $("#gate-close").addEventListener("click",function(){window.location.href="/"});
   $("#gate-dash").addEventListener("click",hideGate);
   $("#gate-input").addEventListener("keydown",function(e){if(e.key==="Enter")verifyCode()});
@@ -1525,6 +1553,7 @@ Deep Sleep stock: 41 units left."></textarea>
   // Load last briefing as context (for the consultant) but stay on the dashboard.
   (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; currentBriefing=last.briefing; } }catch(e){} })();
   // Show the trial/access gate on entry for anyone who hasn't unlocked.
+  checkPaidSession();
   if(!accessCode) showGate();
 })();
 </script>

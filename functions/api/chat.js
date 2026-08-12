@@ -2,6 +2,8 @@
 // Consultant chat. Multi-turn conversation with Claude, grounded in the
 // owner's latest briefing + data. Gated behind ACCESS_CODE (cost control).
 
+import { isValidCode } from "../_lib/access.js";
+
 const CONSULTANT_SYSTEM = `You are Vyrlo's business consultant for the owner of a small e-commerce store. You talk like a sharp, blunt operator who has seen a lot of small stores: practical, numbers-first, no fluff, no corporate hedging.
 
 Rules:
@@ -20,7 +22,7 @@ export async function onRequestPost(context) {
   try {
     const body = await context.request.json().catch(() => ({}));
 
-    if (!env.ACCESS_CODE || String(body.accessCode || "").trim() !== env.ACCESS_CODE) {
+    if (!(await isValidCode(env, body.accessCode))) {
       return json({ error: "Enter your access code to use the consultant." }, 403);
     }
     if (!env.ANTHROPIC_API_KEY) return json({ error: "Server is missing its API key." }, 500);
