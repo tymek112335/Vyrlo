@@ -10,15 +10,19 @@ function json(obj, status) {
 }
 
 export async function onRequestPost(context) {
-  const { env } = context;
-  if (!env.STRIPE_SECRET_KEY || !env.STRIPE_PRICE_ID) {
+  const { request, env } = context;
+  const reqBody = await request.json().catch(() => ({}));
+  const plan = reqBody.plan === "business" ? "business" : "pro";
+  const priceId = plan === "business" ? env.STRIPE_PRICE_ID_BUSINESS : env.STRIPE_PRICE_ID;
+
+  if (!env.STRIPE_SECRET_KEY || !priceId) {
     return json({ error: "Payments aren't configured yet." }, 500);
   }
 
   const origin = "https://vyrlo.cc";
   const body = new URLSearchParams({
     mode: "subscription",
-    "line_items[0][price]": env.STRIPE_PRICE_ID,
+    "line_items[0][price]": priceId,
     "line_items[0][quantity]": "1",
     success_url: origin + "/app?paid_session={CHECKOUT_SESSION_ID}",
     cancel_url: origin + "/app"
