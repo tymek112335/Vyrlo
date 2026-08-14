@@ -76,6 +76,7 @@
   .nav-item.soon:hover{background:none}
   .nav-item .soon-pill{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:2px 7px}
   .nav-item .ready-pill{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--good);background:var(--good-weak);border-radius:20px;padding:2px 7px}
+  .nav-item .ready-pill.warn{color:var(--bad);background:var(--bad-weak)}
   .sb-foot{padding:12px;border-top:1px solid var(--line)}
 
   .main{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -481,7 +482,7 @@
         </button>
         <button class="nav-item" id="nav-profile">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>
-          Your business <span class="ready-pill" id="pf-pill">New</span>
+          Your business <span class="ready-pill warn" id="pf-pill">Important</span>
         </button>
         <button class="nav-item soon" data-soon="Shopify connect">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/></svg>
@@ -807,7 +808,11 @@ Deep Sleep stock: 41 units left."></textarea>
   }
   function updateProfilePill(){
     var pill=$("#pf-pill"); if(!pill) return;
-    if(profileFilled()){ pill.textContent="Set"; } else { pill.textContent="New"; }
+    // Red until it's answered — this is the step that decides whether Vyrlo
+    // gives advice or just description. Green once it's done.
+    var done=profileFilled();
+    pill.textContent=done?"Set":"Important";
+    pill.classList.toggle("warn",!done);
   }
 
   /* Store reader — drafts only the fields a public website can actually show.
