@@ -1,4 +1,4 @@
-import { isValidCode } from "../_lib/access.js";
+import { isValidCode, profileBlock } from "../_lib/access.js";
 
 // Cloudflare Pages Function — POST /api/generate
 // Two modes on one endpoint:
@@ -222,7 +222,7 @@ export async function onRequestPost(context) {
         (rawText ? `The underlying data the briefing was built from:\n"""\n${rawText}\n"""\n\n` : "") +
         `The owner asks: ${question}\n\nAnswer using only the above.`;
 
-      const out = await callClaude(env, { system: ASK_SYSTEM, userMsg });
+      const out = await callClaude(env, { system: ASK_SYSTEM + profileBlock(reqBody.profile), userMsg });
       if (out.error) return out.error;
       return json({ answer: out.text.trim() }, 200);
     }
@@ -239,7 +239,7 @@ export async function onRequestPost(context) {
         `Later briefing — "${newerLabel}" (JSON):\n"""\n${JSON.stringify(newer)}\n"""\n\n` +
         `Compare them for the owner, following the rules exactly.`;
 
-      const out = await callClaude(env, { system: COMPARE_SYSTEM, userMsg });
+      const out = await callClaude(env, { system: COMPARE_SYSTEM + profileBlock(reqBody.profile), userMsg });
       if (out.error) return out.error;
       return json({ answer: out.text.trim() }, 200);
     }
@@ -270,7 +270,7 @@ export async function onRequestPost(context) {
     // line items, more what_changed entries) — a real case truncated mid-JSON
     // at ~4000 during testing. Cost scales with tokens actually generated, not
     // this cap, and the schema itself bounds the shape either way.
-    const out = await callClaude(env, { system: BRIEFING_SYSTEM, userMsg, schema: BRIEFING_SCHEMA, maxTokens: 8000 });
+    const out = await callClaude(env, { system: BRIEFING_SYSTEM + profileBlock(reqBody.profile), userMsg, schema: BRIEFING_SCHEMA, maxTokens: 8000 });
     if (out.error) return out.error;
 
     const briefing = JSON.parse(out.text);

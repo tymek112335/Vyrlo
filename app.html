@@ -311,6 +311,18 @@
 
   /* ---------- briefing ---------- */
   .bwrap{max-width:720px;margin:0 auto;padding:26px 24px 100px}
+  /* business profile */
+  .pf-note{background:var(--accent-weak);border-radius:12px;padding:13px 15px;font-size:13.5px;color:var(--ink-2);line-height:1.55;margin-bottom:20px}
+  .pf-q{margin-bottom:18px}
+  .pf-q label{display:block;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px}
+  .pf-q .pf-help{font-size:12.5px;color:var(--ink-3);margin-bottom:7px;line-height:1.5}
+  .pf-q input,.pf-q select,.pf-q textarea{width:100%;border:1px solid var(--line-2);background:var(--surface);
+    border-radius:11px;padding:10px 12px;font-size:14px;color:var(--ink);outline:none;font-family:inherit}
+  .pf-q textarea{resize:vertical;min-height:66px;line-height:1.55}
+  .pf-q input:focus,.pf-q select:focus,.pf-q textarea:focus{border-color:var(--accent)}
+  .pf-q input::placeholder,.pf-q textarea::placeholder{color:var(--ink-3)}
+  .pf-actions{display:flex;align-items:center;gap:12px;margin-top:22px;flex-wrap:wrap}
+  .pf-saved{font-size:13px;color:var(--good);font-weight:560}
   .greet2{margin:6px 0 24px}
   .greet2 h2{font-size:26px;font-weight:700;letter-spacing:-.03em;margin:0 0 3px}
   .greet2 .gen{color:var(--ink-3);font-size:13px}
@@ -449,6 +461,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
           Compare <span class="ready-pill">New</span>
         </button>
+        <button class="nav-item" id="nav-profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>
+          Your business <span class="ready-pill" id="pf-pill">New</span>
+        </button>
         <button class="nav-item soon" data-soon="Shopify connect">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/></svg>
           Shopify Connect <span class="soon-pill">Soon</span>
@@ -553,6 +569,9 @@ Deep Sleep stock: 41 units left."></textarea>
               <div class="fld"><input id="name" placeholder="Your name (optional)"></div>
               <div class="fld"><input id="period" placeholder="Period, e.g. Yesterday"></div>
             </div>
+            <div class="pf-note" id="up-profile-nudge" hidden style="margin-top:18px;margin-bottom:0">
+              Vyrlo doesn't know your business yet. <button class="link-btn" id="up-profile-link">Answer 8 quick questions</button> and every briefing gets written against your actual goal, budget and hours.
+            </div>
             <div class="go"><button class="btn primary lg" id="generate">Build today's briefing →</button></div>
             <div class="hint">Your data is turned into a briefing and not stored on a server. <button class="link-btn" id="sample-link">See a sample</button></div>
           </div>
@@ -579,6 +598,86 @@ Deep Sleep stock: 41 units left."></textarea>
           <div class="home">
             <div class="greet"><h2>Briefings</h2><p id="hist-sub">Every briefing you've generated.</p></div>
             <div class="recents" id="history-list"></div>
+          </div>
+        </section>
+
+        <!-- BUSINESS PROFILE -->
+        <section class="view" id="view-profile">
+          <div class="home">
+            <div class="greet"><h2>Your business</h2><p>Answer these once. Every briefing and every answer from the consultant is written against them.</p></div>
+            <div class="pf-note">Without this, Vyrlo can only tell you what your numbers did. With it, it can tell you what to do about them — inside your actual budget, hours and goal.</div>
+
+            <div class="pf-q">
+              <label for="pf-sells">What do you sell?</label>
+              <div class="pf-help">A sentence is plenty.</div>
+              <input id="pf-sells" placeholder="Sleep and wind-down bundles — masks, diffusers, essential oils">
+            </div>
+
+            <div class="pf-q">
+              <label for="pf-where">Where do you sell it?</label>
+              <div class="pf-help">Every channel, not just the main one.</div>
+              <input id="pf-where" placeholder="Shopify store, plus a market stall most weekends">
+            </div>
+
+            <div class="pf-q">
+              <label for="pf-size">Roughly how big is the business right now?</label>
+              <select id="pf-size">
+                <option value="">Prefer not to say</option>
+                <option>Pre-revenue — no orders yet</option>
+                <option>Under $1k a month</option>
+                <option>$1k–$10k a month</option>
+                <option>$10k–$50k a month</option>
+                <option>$50k+ a month</option>
+              </select>
+            </div>
+
+            <div class="pf-q">
+              <label for="pf-goal">What do you want to be true 90 days from now?</label>
+              <div class="pf-help">The more specific, the more useful the advice.</div>
+              <input id="pf-goal" placeholder="First 50 orders, or $3k a month, or just profitable">
+            </div>
+
+            <div class="pf-q">
+              <label for="pf-budget">What can you spend on growth each month?</label>
+              <select id="pf-budget">
+                <option value="">Prefer not to say</option>
+                <option>Nothing — $0</option>
+                <option>Under $100</option>
+                <option>$100–$500</option>
+                <option>$500–$2,000</option>
+                <option>$2,000+</option>
+              </select>
+            </div>
+
+            <div class="pf-q">
+              <label for="pf-hours">How many hours a week do you actually have for this?</label>
+              <select id="pf-hours">
+                <option value="">Prefer not to say</option>
+                <option>Under 5 — this is a side thing</option>
+                <option>5–15</option>
+                <option>15–30</option>
+                <option>Full time</option>
+                <option>Full time, with a team</option>
+              </select>
+            </div>
+
+            <div class="pf-q">
+              <label for="pf-tried">What have you already tried that didn't work?</label>
+              <div class="pf-help">Stops Vyrlo from recommending something you've already burned time on.</div>
+              <textarea id="pf-tried" placeholder="Ran Meta ads for a month, spent $200, got two sales. Posted on Pinterest daily, no traffic."></textarea>
+            </div>
+
+            <div class="pf-q">
+              <label for="pf-problem">What do you think your biggest problem is?</label>
+              <div class="pf-help">Your read on it. Vyrlo will tell you honestly if the numbers disagree.</div>
+              <textarea id="pf-problem" placeholder="I think people find the store but don't trust it enough to buy."></textarea>
+            </div>
+
+            <div class="pf-actions">
+              <button class="btn primary" id="pf-save">Save profile</button>
+              <button class="btn" id="pf-clear">Clear</button>
+              <span class="pf-saved" id="pf-saved" hidden>Saved</span>
+            </div>
           </div>
         </section>
 
@@ -640,10 +739,39 @@ Deep Sleep stock: 41 units left."></textarea>
   var $=function(s,r){return (r||document).querySelector(s)};
   var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
   var esc=function(s){var d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML};
-  var LS={reports:"vyrlo.reports",settings:"vyrlo.settings"};
+  var LS={reports:"vyrlo.reports",settings:"vyrlo.settings",profile:"vyrlo.profile"};
   function load(k,f){try{return JSON.parse(localStorage.getItem(k))||f}catch(e){return f}}
   function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
   var settings=load(LS.settings,{name:"",email:false,time:"08:00"});
+
+  /* ---------- business profile ----------
+     Answered once, sent with every request so the model advises inside the
+     owner's real constraints instead of guessing at them. */
+  var PF_FIELDS=["sells","where","size","goal","budget","hours","tried","problem"];
+  var profile=load(LS.profile,null);
+  function profileFilled(p){ p=p||profile; if(!p) return false;
+    return PF_FIELDS.some(function(k){return (p[k]||"").trim()}); }
+  function renderProfile(){
+    if(!profile) return;
+    PF_FIELDS.forEach(function(k){ var el=$("#pf-"+k); if(el) el.value=profile[k]||""; });
+  }
+  function readProfile(){
+    var p={}; PF_FIELDS.forEach(function(k){ var el=$("#pf-"+k); p[k]=el?(el.value||"").trim():""; }); return p;
+  }
+  function saveProfile(){
+    profile=readProfile(); save(LS.profile,profile);
+    var s=$("#pf-saved"); if(s){ s.hidden=false; setTimeout(function(){s.hidden=true},2200); }
+    updateProfilePill(); toast("Saved. Your next briefing will use this.");
+  }
+  function clearProfile(){
+    profile=null; try{localStorage.removeItem(LS.profile)}catch(e){}
+    PF_FIELDS.forEach(function(k){ var el=$("#pf-"+k); if(el) el.value=""; });
+    updateProfilePill(); toast("Profile cleared.");
+  }
+  function updateProfilePill(){
+    var pill=$("#pf-pill"); if(!pill) return;
+    if(profileFilled()){ pill.textContent="Set"; } else { pill.textContent="New"; }
+  }
   function applyTheme(t){document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light");try{localStorage.setItem("vyrlo.theme",t)}catch(e){}var tb=document.querySelector("#theme-toggle");if(tb)tb.textContent=t==="dark"?"☀️":"🌙";}
   applyTheme((function(){try{return localStorage.getItem("vyrlo.theme")}catch(e){return null}})()||"light");
   var lastRaw="", pendingFileText="", pendingImage=null;
@@ -690,12 +818,13 @@ Deep Sleep stock: 41 units left."></textarea>
   function showView(v){
     $$(".view").forEach(function(el){el.classList.remove("on")});
     $("#view-"+v).classList.add("on");
-    $("#page-title").textContent = v==="home"?"Dashboard":v==="upload"?"New briefing":v==="chat"?"Consultant":v==="history"?"Briefings":v==="compare"?"Compare":"Today's briefing";
+    $("#page-title").textContent = v==="home"?"Dashboard":v==="upload"?"New briefing":v==="chat"?"Consultant":v==="history"?"Briefings":v==="compare"?"Compare":v==="profile"?"Your business":"Today's briefing";
     $("#new-briefing").style.display = (v==="briefing")?"":"none";
     closeSidebar(); window.scrollTo(0,0);
     if(v==="home"){ renderHome(); }
     if(v==="history"){ renderHistory(); }
     if(v==="compare"){ renderCompare(); }
+    if(v==="profile"){ renderProfile(); }
   }
   function renderHistory(){
     var reps=load(LS.reports,[]);
@@ -1070,7 +1199,7 @@ Deep Sleep stock: 41 units left."></textarea>
     var btn=$("#cmp-ask"), box=$("#cmp-ai");
     btn.disabled=true; btn.textContent="Reading both briefings…";
     fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},
-      body:JSON.stringify({mode:"compare",newer:ra.briefing,older:rb.briefing,newerLabel:ra.label,olderLabel:rb.label,accessCode:accessCode})})
+      body:JSON.stringify({mode:"compare",newer:ra.briefing,older:rb.briefing,newerLabel:ra.label,olderLabel:rb.label,profile:profile,accessCode:accessCode})})
       .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j&&j.error)||"unreachable");return j})})
       .then(function(d){ if(d.error) throw new Error(d.error); box.innerHTML='<div class="cmp-ai">'+esc(d.answer||"")+'</div>'; })
       .catch(function(err){ box.innerHTML='<div class="empty">'+esc(String((err&&err.message)||"Couldn't reach the consultant."))+'</div>'; })
@@ -1342,7 +1471,7 @@ Deep Sleep stock: 41 units left."></textarea>
         input.value="";input.disabled=true;send.disabled=true;
         var block=document.createElement("div");block.innerHTML='<div class="qi">'+esc(q)+'</div><div class="ai">Thinking…</div>';
         $("#qa").appendChild(block);
-        fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"ask",question:q,briefing:b,rawText:lastRaw,accessCode:accessCode})})
+        fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"ask",question:q,briefing:b,rawText:lastRaw,profile:profile,accessCode:accessCode})})
           .then(function(r){return r.ok?r.json():Promise.reject()})
           .then(function(d){block.querySelector(".ai").textContent=d.answer||"No answer."})
           .catch(function(){block.querySelector(".ai").textContent="Couldn't reach the engine — try again once it's deployed."})
@@ -1361,7 +1490,7 @@ Deep Sleep stock: 41 units left."></textarea>
     if(!raw&&!pendingImage){$("#paste").focus();$("#paste").style.borderColor="var(--bad)";setTimeout(function(){$("#paste").style.borderColor=""},1200);return}
     settings.name=$("#name").value.trim()||settings.name;save(LS.settings,settings);
     lastRaw=raw;var period=$("#period").value.trim();var started=Date.now();startAnalyze();
-    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rawText:raw,image:pendingImage,period:period,name:settings.name,accessCode:accessCode})})
+    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rawText:raw,image:pendingImage,period:period,name:settings.name,profile:profile,accessCode:accessCode})})
       .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j&&j.error)||"unreachable");return j})})
       .then(function(b){if(b.error)throw new Error(b.error);if(!accessCode)markFreeUsed();var w=Math.max(0,2200-(Date.now()-started));setTimeout(function(){finishAnalyze(function(){saveReport(b,period);render(b,{})})},w)})
       .catch(function(err){
@@ -1479,7 +1608,9 @@ Deep Sleep stock: 41 units left."></textarea>
       .then(function(d){ if(d&&d.ok&&d.code){ unlockWith(d.code); } else { toast(d.error||"Couldn't confirm the subscription — enter your code manually or contact support."); } })
       .catch(function(){ toast("Couldn't confirm the subscription — try refreshing."); });
   }
-  function goBuild(){ if(!accessCode && freeUsed()){ showGate(); return; } pendingFileText="";clearShot();$("#filename").textContent=""; showView("upload"); }
+  function goBuild(){ if(!accessCode && freeUsed()){ showGate(); return; } pendingFileText="";clearShot();$("#filename").textContent="";
+    var nudge=$("#up-profile-nudge"); if(nudge) nudge.hidden=profileFilled();
+    showView("upload"); }
 
   /* ---------- wire ---------- */
   var chatMsgs=[];
@@ -1493,7 +1624,7 @@ Deep Sleep stock: 41 units left."></textarea>
     var inp=$("#chat-in"); var t=(inp.value||"").trim(); if(!t) return;
     inp.value=""; chatMsgs.push({role:"user",content:t}); chatMsgs.push({role:"assistant",content:"…"}); renderChat();
     var send=$("#chat-send"); if(send) send.disabled=true;
-    fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({messages:chatMsgs.filter(function(m){return m.content!=="…"}),briefing:currentBriefing,rawText:lastRaw,accessCode:accessCode})})
+    fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({messages:chatMsgs.filter(function(m){return m.content!=="…"}),briefing:currentBriefing,rawText:lastRaw,profile:profile,accessCode:accessCode})})
       .then(function(r){return r.json()})
       .then(function(d){ chatMsgs.pop(); chatMsgs.push({role:"assistant",content:d.reply||d.error||"No reply."}); renderChat(); })
       .catch(function(){ chatMsgs.pop(); chatMsgs.push({role:"assistant",content:"Couldn't reach the consultant. Try again."}); renderChat(); })
@@ -1505,6 +1636,10 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#nav-consultant").addEventListener("click",openChat);
   $("#nav-history").addEventListener("click",function(){showView("history")});
   $("#nav-compare").addEventListener("click",function(){showView("compare")});
+  $("#nav-profile").addEventListener("click",function(){showView("profile")});
+  $("#pf-save").addEventListener("click",saveProfile);
+  $("#pf-clear").addEventListener("click",clearProfile);
+  $("#up-profile-link").addEventListener("click",function(){showView("profile")});
   $("#chat-send").addEventListener("click",chatSend);
   $("#chat-in").addEventListener("keydown",function(e){ if(e.key==="Enter") chatSend(); });
   $("#cta-sample").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});
@@ -1549,6 +1684,7 @@ Deep Sleep stock: 41 units left."></textarea>
   });
 
   if(settings.name)$("#name").value=settings.name;
+  updateProfilePill();
   renderHome();
   // Load last briefing as context (for the consultant) but stay on the dashboard.
   (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; currentBriefing=last.briefing; } }catch(e){} })();

@@ -2,7 +2,7 @@
 // Consultant chat. Multi-turn conversation with Claude, grounded in the
 // owner's latest briefing + data. Gated behind ACCESS_CODE (cost control).
 
-import { isValidCode } from "../_lib/access.js";
+import { isValidCode, profileBlock } from "../_lib/access.js";
 
 const CONSULTANT_SYSTEM = `You are Vyrlo's business consultant for the owner of a small e-commerce store. You talk like a sharp, blunt operator who has seen a lot of small stores: practical, numbers-first, no fluff, no corporate hedging.
 
@@ -35,6 +35,7 @@ export async function onRequestPost(context) {
     const brief = body.briefing ? JSON.stringify(body.briefing) : "";
     const raw = (body.rawText || "").slice(0, 6000);
     const system = CONSULTANT_SYSTEM
+      + profileBlock(body.profile)
       + (brief ? `\n\nThe owner's latest briefing (JSON):\n${brief}` : "")
       + (raw ? `\n\nThe underlying numbers behind it:\n"""\n${raw}\n"""` : "")
       + (!brief && !raw ? `\n\nNo store data has been loaded yet. If the owner asks about their numbers, tell them to build a briefing or paste data first.` : "");
