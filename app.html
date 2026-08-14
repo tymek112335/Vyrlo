@@ -323,6 +323,24 @@
   .pf-q input::placeholder,.pf-q textarea::placeholder{color:var(--ink-3)}
   .pf-actions{display:flex;align-items:center;gap:12px;margin-top:22px;flex-wrap:wrap}
   .pf-saved{font-size:13px;color:var(--good);font-weight:560}
+  /* store reader */
+  .pf-read{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:18px 20px;margin-bottom:22px}
+  .pf-read h3{font-size:15px;font-weight:660;margin:0 0 4px}
+  .pf-read p{font-size:13px;color:var(--ink-3);margin:0 0 12px;line-height:1.55}
+  .pf-readrow{display:flex;gap:9px;flex-wrap:wrap}
+  .pf-readrow input{flex:1;min-width:190px;border:1px solid var(--line-2);background:var(--surface);
+    border-radius:11px;padding:10px 12px;font-size:14px;color:var(--ink);outline:none}
+  .pf-readrow input:focus{border-color:var(--accent)}
+  .pf-readrow input::placeholder{color:var(--ink-3)}
+  .pf-err{font-size:13px;color:var(--bad);margin-top:10px;line-height:1.5}
+  .pf-found{margin-top:14px;border-top:1px solid var(--line);padding-top:13px}
+  .pf-found h4{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px}
+  .pf-found ul{margin:0;padding-left:17px}
+  .pf-found li{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin-bottom:4px}
+  .pf-draft-tag{display:none;font-size:11px;font-weight:660;color:var(--accent);background:var(--accent-weak);
+    border-radius:20px;padding:2px 8px;margin-left:7px;vertical-align:middle}
+  .pf-q.drafted .pf-draft-tag{display:inline-block}
+  .pf-q.drafted input,.pf-q.drafted textarea{border-color:var(--accent)}
   .greet2{margin:6px 0 24px}
   .greet2 h2{font-size:26px;font-weight:700;letter-spacing:-.03em;margin:0 0 3px}
   .greet2 .gen{color:var(--ink-3);font-size:13px}
@@ -605,16 +623,30 @@ Deep Sleep stock: 41 units left."></textarea>
         <section class="view" id="view-profile">
           <div class="home">
             <div class="greet"><h2>Your business</h2><p>Answer these once. Every briefing and every answer from the consultant is written against them.</p></div>
-            <div class="pf-note">Without this, Vyrlo can only tell you what your numbers did. With it, it can tell you what to do about them — inside your actual budget, hours and goal.</div>
+            <div class="pf-note">Worth two minutes. Skip it and Vyrlo can only tell you what your numbers did — it won't know your budget, so it may suggest ads you can't afford, and it won't know your goal, so it can't tell you whether you're on track.</div>
 
-            <div class="pf-q">
-              <label for="pf-sells">What do you sell?</label>
+            <div class="pf-read">
+              <h3>Let Vyrlo read your store first</h3>
+              <p>It reads your public pages and fills in what it can see. Everything it drafts is marked, and nothing saves until you've checked it. It won't guess your budget, goal or hours — only you know those.</p>
+              <div class="pf-readrow">
+                <input id="pf-url" placeholder="yourstore.com" autocomplete="off">
+                <button class="btn" id="pf-read-go">Read my store</button>
+              </div>
+              <div class="pf-err" id="pf-read-err" hidden></div>
+              <div class="pf-found" id="pf-found" hidden>
+                <h4>What Vyrlo can see publicly</h4>
+                <ul id="pf-found-list"></ul>
+              </div>
+            </div>
+
+            <div class="pf-q" id="pf-q-sells">
+              <label for="pf-sells">What do you sell?<span class="pf-draft-tag">drafted — check this</span></label>
               <div class="pf-help">A sentence is plenty.</div>
               <input id="pf-sells" placeholder="Sleep and wind-down bundles — masks, diffusers, essential oils">
             </div>
 
-            <div class="pf-q">
-              <label for="pf-where">Where do you sell it?</label>
+            <div class="pf-q" id="pf-q-where">
+              <label for="pf-where">Where do you sell it?<span class="pf-draft-tag">drafted — check this</span></label>
               <div class="pf-help">Every channel, not just the main one.</div>
               <input id="pf-where" placeholder="Shopify store, plus a market stall most weekends">
             </div>
@@ -760,17 +792,51 @@ Deep Sleep stock: 41 units left."></textarea>
   }
   function saveProfile(){
     profile=readProfile(); save(LS.profile,profile);
+    // Approving is what turns a draft into their own answer.
+    ["sells","where"].forEach(function(k){markDrafted(k,false)});
     var s=$("#pf-saved"); if(s){ s.hidden=false; setTimeout(function(){s.hidden=true},2200); }
     updateProfilePill(); toast("Saved. Your next briefing will use this.");
   }
   function clearProfile(){
     profile=null; try{localStorage.removeItem(LS.profile)}catch(e){}
     PF_FIELDS.forEach(function(k){ var el=$("#pf-"+k); if(el) el.value=""; });
+    ["sells","where"].forEach(function(k){markDrafted(k,false)});
+    var found=$("#pf-found"); if(found) found.hidden=true;
+    var err=$("#pf-read-err"); if(err) err.hidden=true;
     updateProfilePill(); toast("Profile cleared.");
   }
   function updateProfilePill(){
     var pill=$("#pf-pill"); if(!pill) return;
     if(profileFilled()){ pill.textContent="Set"; } else { pill.textContent="New"; }
+  }
+
+  /* Store reader — drafts only the fields a public website can actually show.
+     Goal, budget, hours and history stay the owner's to answer. */
+  function markDrafted(key,on){
+    var q=$("#pf-q-"+key); if(q) q.classList.toggle("drafted",!!on);
+  }
+  function readStore(){
+    var url=($("#pf-url").value||"").trim();
+    var err=$("#pf-read-err"), btn=$("#pf-read-go"), found=$("#pf-found");
+    err.hidden=true;
+    if(!url){ err.textContent="Add your store address first."; err.hidden=false; return; }
+    btn.disabled=true; btn.textContent="Reading…";
+    fetch("/api/read-store",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({url:url})})
+      .then(function(r){return r.json()})
+      .then(function(d){
+        if(!d||!d.ok){ err.textContent=(d&&d.error)||"Couldn't read that store."; err.hidden=false; return; }
+        ["sells","where"].forEach(function(k){
+          var v=(d.drafted&&d.drafted[k])||"";
+          if(v){ $("#pf-"+k).value=v; markDrafted(k,true); }
+        });
+        if(d.findings&&d.findings.length){
+          $("#pf-found-list").innerHTML=d.findings.map(function(f){return "<li>"+esc(f)+"</li>"}).join("");
+          found.hidden=false;
+        } else { found.hidden=true; }
+        toast("Read "+d.site+". Check what it drafted, then answer the rest.");
+      })
+      .catch(function(){ err.textContent="Couldn't reach the reader — try again, or just fill it in yourself."; err.hidden=false; })
+      .then(function(){ btn.disabled=false; btn.textContent="Read my store"; });
   }
   function applyTheme(t){document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light");try{localStorage.setItem("vyrlo.theme",t)}catch(e){}var tb=document.querySelector("#theme-toggle");if(tb)tb.textContent=t==="dark"?"☀️":"🌙";}
   applyTheme((function(){try{return localStorage.getItem("vyrlo.theme")}catch(e){return null}})()||"light");
@@ -1640,6 +1706,12 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#pf-save").addEventListener("click",saveProfile);
   $("#pf-clear").addEventListener("click",clearProfile);
   $("#up-profile-link").addEventListener("click",function(){showView("profile")});
+  $("#pf-read-go").addEventListener("click",readStore);
+  $("#pf-url").addEventListener("keydown",function(e){if(e.key==="Enter")readStore()});
+  // Once the owner edits a drafted field it's theirs, so drop the marker.
+  ["sells","where"].forEach(function(k){
+    $("#pf-"+k).addEventListener("input",function(){markDrafted(k,false)});
+  });
   $("#chat-send").addEventListener("click",chatSend);
   $("#chat-in").addEventListener("keydown",function(e){ if(e.key==="Enter") chatSend(); });
   $("#cta-sample").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});
