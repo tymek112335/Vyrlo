@@ -274,6 +274,12 @@
   .spark.up .spark-dot.last{fill:var(--good)}
   .spark.down .spark-dot.last{fill:var(--bad)}
   .spark-labels{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .spark-proj{stroke-width:2;stroke-dasharray:4 4;fill:none;opacity:.7}
+  .spark.up .spark-proj{stroke:var(--good)}
+  .spark.down .spark-proj{stroke:var(--bad)}
+  .spark-dot.proj{fill:none;stroke-dasharray:2 2}
+  .tr-proj{font-size:12.5px;color:var(--ink-2);margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);line-height:1.5}
+  .tr-proj b{color:var(--ink)}
   /* Stacked on narrow screens the "compared with" separator strands beside one
      select, so the two labelled dropdowns carry the meaning on their own. */
   @media(max-width:640px){
@@ -513,9 +519,9 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></svg>
           Google Sheets <span class="soon-pill">Soon</span>
         </button>
-        <button class="nav-item soon" data-soon="Trends & forecasts">
+        <button class="nav-item" id="nav-trends">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg>
-          Trends & Forecasts <span class="soon-pill">Soon</span>
+          Trends <span class="ready-pill">New</span>
         </button>
         <button class="nav-item soon" data-soon="Daily email briefing">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
@@ -635,6 +641,14 @@ Deep Sleep stock: 41 units left."></textarea>
           <div class="home">
             <div class="greet"><h2>Briefings</h2><p id="hist-sub">Every briefing you've generated.</p></div>
             <div class="recents" id="history-list"></div>
+          </div>
+        </section>
+
+        <!-- TRENDS -->
+        <section class="view" id="view-trends">
+          <div class="home">
+            <div class="greet"><h2>Trends</h2><p>Every metric across your saved briefings, and the plain-math line if the recent pace continues. No AI call, no forecast — just your own numbers extended forward.</p></div>
+            <div id="trends-body"></div>
           </div>
         </section>
 
@@ -884,7 +898,7 @@ Deep Sleep stock: 41 units left."></textarea>
     {name:"Shopify Connect",desc:"Auto-pull orders daily — no manual export.",icon:'<path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/>'},
     {name:"Stripe",desc:"Bring in payments, refunds and MRR.",icon:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>'},
     {name:"Google Sheets",desc:"Sync a sheet and brief on it automatically.",icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/>'},
-    {name:"Trends & Forecasts",desc:"See where the numbers are heading next.",icon:'<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'},
+    {live:true,action:"trends",name:"Trends",desc:"Every metric's real history, and where it lands if the pace holds.",icon:'<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'},
     {name:"Daily Email",desc:"Your briefing in your inbox every morning.",icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'}
   ];
 
@@ -916,7 +930,7 @@ Deep Sleep stock: 41 units left."></textarea>
   function showView(v){
     $$(".view").forEach(function(el){el.classList.remove("on")});
     $("#view-"+v).classList.add("on");
-    $("#page-title").textContent = v==="home"?"Dashboard":v==="upload"?"New briefing":v==="chat"?"Consultant":v==="history"?"Briefings":v==="compare"?"Compare":v==="profile"?"Your business":v==="actions"?"Action items":"Today's briefing";
+    $("#page-title").textContent = v==="home"?"Dashboard":v==="upload"?"New briefing":v==="chat"?"Consultant":v==="history"?"Briefings":v==="compare"?"Compare":v==="profile"?"Your business":v==="actions"?"Action items":v==="trends"?"Trends":"Today's briefing";
     $("#new-briefing").style.display = (v==="briefing")?"":"none";
     closeSidebar(); window.scrollTo(0,0);
     if(v==="home"){ renderHome(); }
@@ -924,6 +938,7 @@ Deep Sleep stock: 41 units left."></textarea>
     if(v==="compare"){ renderCompare(); }
     if(v==="profile"){ renderProfile(); }
     if(v==="actions"){ renderActionsPage(); }
+    if(v==="trends"){ renderTrendsPage(); }
   }
   function renderHistory(){
     var reps=load(LS.reports,[]);
@@ -1340,6 +1355,7 @@ Deep Sleep stock: 41 units left."></textarea>
     $$('#tools [data-action="build"]').forEach(function(b){b.addEventListener("click",goBuild)});
     $$('#tools [data-action="chat"]').forEach(function(b){b.addEventListener("click",openChat)});
     $$('#tools [data-action="compare"]').forEach(function(b){b.addEventListener("click",function(){showView("compare")})});
+    $$('#tools [data-action="trends"]').forEach(function(b){b.addEventListener("click",function(){showView("trends")})});
     $$("#tools [data-soon]").forEach(function(b){b.addEventListener("click",function(){toast(b.getAttribute("data-soon")+" is coming soon.")})});
     // recents
     if(!reps.length){ $("#recents").innerHTML='<div class="empty">No briefings yet — build your first one above.</div>'; }
@@ -1460,6 +1476,74 @@ Deep Sleep stock: 41 units left."></textarea>
       +'<div class="spark-wrap"><svg viewBox="0 0 '+W+' '+H+'" class="spark '+(up?"up":"down")+'" preserveAspectRatio="none">'
       +'<path d="'+path+'" class="spark-line" fill="none"/>'+dots+'</svg>'
       +'<div class="spark-labels"><span>'+esc(xy[0].p.label)+' · '+esc(xy[0].p.raw)+'</span><span>'+esc(xy[xy.length-1].p.label)+' · '+esc(xy[xy.length-1].p.raw)+'</span></div></div></div>';
+  }
+
+  /* ---------- Trends page ----------
+     Different purpose from the briefing view on purpose: the briefing tells
+     you what happened and why, once, per period. This is every metric's
+     full history side by side, plus a plain-arithmetic line — average
+     change per briefing, extended one step forward. No model call: this
+     page costs zero AI credits, it's pure math over what's already saved. */
+  function allMetricSeries(){
+    var reps=load(LS.reports,[]).slice(0,10).slice().reverse(); // oldest -> newest
+    var byKey={};
+    reps.forEach(function(r){
+      ((r.briefing&&r.briefing.what_changed)||[]).forEach(function(mc){
+        var pv=parseVal(mc.value);
+        if(!pv||pv.unit==="%") return; // % deltas aren't meaningfully summable across periods
+        var key=normName(mc.metric);
+        byKey[key]=byKey[key]||{name:mc.metric,points:[]};
+        byKey[key].points.push({label:r.label,n:pv.n,raw:mc.value});
+      });
+    });
+    return Object.keys(byKey).map(function(k){return byKey[k]}).filter(function(s){return s.points.length>=3}).slice(0,8);
+  }
+  function projectNext(points){
+    var n=points.length; if(n<3) return null;
+    var deltas=[]; for(var i=1;i<n;i++) deltas.push(points[i].n-points[i-1].n);
+    var avg=deltas.reduce(function(a,b){return a+b},0)/deltas.length;
+    return {next:points[n-1].n+avg, avgDelta:avg};
+  }
+  function fmtLikeSeries(n,points){
+    var sample=points[points.length-1].raw;
+    if(/[$€£]/.test(sample)) return sample.charAt(0)+Math.round(n).toLocaleString();
+    return String(Math.round(n));
+  }
+  function trendCardHtml(s){
+    var pts=s.points, n=pts.length;
+    var proj=projectNext(pts);
+    var vals=pts.map(function(p){return p.n}); if(proj) vals=vals.concat([proj.next]);
+    var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals), span=(hi-lo)||1;
+    var W=560,H=110,pad=14, totalPts=n+(proj?1:0);
+    function xyAt(i,val){ return {x:pad+(totalPts===1?0:(W-2*pad)*i/(totalPts-1)), y:H-pad-((val-lo)/span)*(H-2*pad)}; }
+    var xy=pts.map(function(p,i){ var c=xyAt(i,p.n); return {x:c.x,y:c.y,p:p}; });
+    var path=xy.map(function(pt,i){return (i?"L":"M")+pt.x.toFixed(1)+","+pt.y.toFixed(1)}).join(" ");
+    var up = xy[xy.length-1].p.n >= xy[0].p.n;
+    var dots=xy.map(function(pt,i){
+      return '<circle cx="'+pt.x.toFixed(1)+'" cy="'+pt.y.toFixed(1)+'" r="'+(i===xy.length-1?4.5:3)+'" class="spark-dot'+(i===xy.length-1?" last":"")+'"><title>'+esc(pt.p.label+": "+pt.p.raw)+'</title></circle>';
+    }).join("");
+    var projLine="", projDot="", projNote="";
+    if(proj){
+      var pc=xyAt(n,proj.next);
+      projLine='<path d="M'+xy[n-1].x.toFixed(1)+','+xy[n-1].y.toFixed(1)+' L'+pc.x.toFixed(1)+','+pc.y.toFixed(1)+'" class="spark-proj"/>';
+      projDot='<circle cx="'+pc.x.toFixed(1)+'" cy="'+pc.y.toFixed(1)+'" r="3.5" class="spark-dot proj"><title>If the recent pace holds: ~'+esc(fmtLikeSeries(proj.next,pts))+'</title></circle>';
+      var dir=proj.avgDelta>=0?"up":"down";
+      projNote='<div class="tr-proj">If the recent pace holds, next briefing lands near <b>~'+esc(fmtLikeSeries(proj.next,pts))+'</b> ('+(dir==="up"?"+":"")+esc(fmtLikeSeries(proj.avgDelta,pts))+' avg per briefing). Plain arithmetic on your last '+n+' readings, not a prediction.</div>';
+    }
+    return '<div class="card"><div class="sec-h">'+esc(s.name)+'</div>'
+      +'<div class="spark-wrap"><svg viewBox="0 0 '+W+' '+H+'" class="spark '+(up?"up":"down")+'" preserveAspectRatio="none">'
+      +'<path d="'+path+'" class="spark-line" fill="none"/>'+projLine+dots+projDot+'</svg>'
+      +'<div class="spark-labels"><span>'+esc(xy[0].p.label)+' · '+esc(xy[0].p.raw)+'</span><span>'+esc(xy[xy.length-1].p.label)+' · '+esc(xy[xy.length-1].p.raw)+'</span></div></div>'
+      +projNote+'</div>';
+  }
+  function renderTrendsPage(){
+    var el=$("#trends-body"); if(!el) return;
+    var series=allMetricSeries();
+    if(!series.length){
+      el.innerHTML='<div class="card"><div class="empty">Build at least 3 briefings that share a metric (a plain figure, not a percentage) and its trend will chart here automatically.</div></div>';
+      return;
+    }
+    el.innerHTML=series.map(trendCardHtml).join("");
   }
 
   function flagFieldsHtml(fields){
@@ -1797,6 +1881,7 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#nav-compare").addEventListener("click",function(){showView("compare")});
   $("#nav-profile").addEventListener("click",function(){showView("profile")});
   $("#nav-actions").addEventListener("click",function(){showView("actions")});
+  $("#nav-trends").addEventListener("click",function(){showView("trends")});
   $("#pf-save").addEventListener("click",saveProfile);
   $("#pf-clear").addEventListener("click",clearProfile);
   $("#up-profile-link").addEventListener("click",function(){showView("profile")});
