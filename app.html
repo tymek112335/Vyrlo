@@ -405,6 +405,15 @@
   .rec .t{font-size:14.5px;font-weight:600;margin-bottom:3px}
   .rec .r{font-size:13px;color:var(--ink-2);line-height:1.5}
   .rec .eff{flex:none;font-size:11.5px;color:var(--ink-3);font-weight:560;background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:4px 10px;height:fit-content;white-space:nowrap}
+  /* carry-over actions */
+  .oa-list{margin:0;padding:0;list-style:none}
+  .oa{display:flex;align-items:flex-start;gap:12px;padding:13px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+  .oa:last-child{border-bottom:none}
+  .oa input{margin-top:2px;flex:none;width:18px;height:18px;accent-color:var(--accent)}
+  .oa .body{flex:1}
+  .oa .t{font-size:14px;font-weight:600;color:var(--ink)}
+  .oa .from{font-size:12px;color:var(--ink-3);margin-top:2px}
+  .oa-empty{font-size:13px;color:var(--ink-3);padding:6px 2px}
   .ask input{width:100%;border:1px solid var(--line-2);background:var(--surface-2);border-radius:12px;padding:13px 15px;font-size:14.5px;color:var(--ink);outline:none}
   .ask .row{display:flex;gap:9px}
   .qa{margin-top:16px;display:flex;flex-direction:column;gap:14px}
@@ -554,6 +563,7 @@
               </div>
             </div>
 
+            <div id="open-actions"></div>
             <div id="latest"></div>
 
             <div class="sec-h">Tools &amp; integrations</div>
@@ -772,7 +782,7 @@ Deep Sleep stock: 41 units left."></textarea>
   var $=function(s,r){return (r||document).querySelector(s)};
   var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
   var esc=function(s){var d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML};
-  var LS={reports:"vyrlo.reports",settings:"vyrlo.settings",profile:"vyrlo.profile"};
+  var LS={reports:"vyrlo.reports",settings:"vyrlo.settings",profile:"vyrlo.profile",actions:"vyrlo.actions"};
   function load(k,f){try{return JSON.parse(localStorage.getItem(k))||f}catch(e){return f}}
   function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
   var settings=load(LS.settings,{name:"",email:false,time:"08:00"});
@@ -1295,6 +1305,7 @@ Deep Sleep stock: 41 units left."></textarea>
       {label:"Business health",value:lastHealth?(healthMap[lastHealth]||"—"):"—",sub:last?"latest read":"—",dot:lastHealth?healthColor[lastHealth]:null},
       {label:"Data sources",value:"1",sub:"CSV upload"}
     ].map(function(s){return '<div class="stat"><div class="s-label">'+esc(s.label)+'</div><div class="s-val">'+(s.dot?'<span class="dot" style="background:'+s.dot+'"></span>':'')+esc(s.value)+'</div><div class="s-sub">'+esc(s.sub)+'</div></div>'}).join("");
+    renderOpenActions();
     if(last){
       var lb=last.briefing, lsum=(lb&&lb.summary)||{}, lh=lsum.health||"good";
       $("#latest").innerHTML='<div class="sec-h">Latest briefing</div><div class="latest-card"><div class="lc-top"><span class="badge '+lh+'"><span class="dot"></span>'+esc(healthMap[lh]||"—")+'</span><span class="lc-date">'+esc(last.date)+'</span></div><div class="lc-head">'+esc(lsum.headline||"")+'</div><div class="lc-body">'+esc((lsum.body||"").replace(/<[^>]+>/g,""))+'</div><button class="btn sm" id="lc-open">View full briefing →</button></div>';
@@ -1561,7 +1572,7 @@ Deep Sleep stock: 41 units left."></textarea>
     if(!raw&&!pendingImage){$("#paste").focus();$("#paste").style.borderColor="var(--bad)";setTimeout(function(){$("#paste").style.borderColor=""},1200);return}
     settings.name=$("#name").value.trim()||settings.name;save(LS.settings,settings);
     lastRaw=raw;var period=$("#period").value.trim();var started=Date.now();startAnalyze();
-    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rawText:raw,image:pendingImage,period:period,name:settings.name,profile:profile,accessCode:accessCode})})
+    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rawText:raw,image:pendingImage,period:period,name:settings.name,profile:profile,openActions:openActions().map(function(a){return a.title}),accessCode:accessCode})})
       .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j&&j.error)||"unreachable");return j})})
       .then(function(b){if(b.error)throw new Error(b.error);if(!accessCode)markFreeUsed();var w=Math.max(0,2200-(Date.now()-started));setTimeout(function(){finishAnalyze(function(){saveReport(b,period);render(b,{})})},w)})
       .catch(function(err){
@@ -1586,6 +1597,37 @@ Deep Sleep stock: 41 units left."></textarea>
     var label=period?period:new Date().toLocaleDateString([], {month:"short",day:"numeric"});
     reps.unshift({id:Date.now(),label:label,date:new Date().toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}),briefing:b,raw:lastRaw});
     save(LS.reports,reps.slice(0,30));
+  }
+
+  /* ---------- carry-over actions ----------
+     Recommendations from past briefings, done state tracked separately so
+     "was this actually done" persists independent of the briefing record.
+     Open items feed back into the next briefing's prompt. */
+  function actionsState(){ return load(LS.actions,{}); }
+  function isActionDone(reportId,idx){ var st=actionsState(); return !!(st[reportId]&&st[reportId][idx]); }
+  function setActionDone(reportId,idx,done){
+    var st=actionsState(); st[reportId]=st[reportId]||{}; st[reportId][idx]=!!done; save(LS.actions,st);
+  }
+  function openActions(){
+    var reps=load(LS.reports,[]).slice(0,5); var out=[];
+    reps.forEach(function(r){
+      (r.briefing&&r.briefing.recommendations||[]).forEach(function(rec,idx){
+        if(!isActionDone(r.id,idx)) out.push({reportId:r.id,idx:idx,title:rec.title,from:r.label});
+      });
+    });
+    return out.slice(0,6);
+  }
+  function renderOpenActions(){
+    var el=$("#open-actions"); if(!el) return;
+    var items=openActions();
+    if(!items.length){ el.innerHTML=""; return; }
+    el.innerHTML='<div class="card"><div class="sec-h">Still open from past briefings</div><ul class="oa-list">'
+      +items.map(function(a,i){return '<li class="oa" data-i="'+i+'"><input type="checkbox" data-i="'+i+'"><div class="body"><div class="t">'+esc(a.title)+'</div><div class="from">from '+esc(a.from)+'</div></div></li>'}).join("")
+      +'</ul></div>';
+    items.forEach(function(a,i){
+      var cb=el.querySelector('input[data-i="'+i+'"]');
+      cb.addEventListener("change",function(){ setActionDone(a.reportId,a.idx,cb.checked); setTimeout(renderOpenActions,180); });
+    });
   }
 
   /* ---------- files ---------- */

@@ -253,10 +253,20 @@ export async function onRequestPost(context) {
     if (reqBody.image && !image) return json({ error: "That image couldn't be read — use a PNG, JPEG, GIF or WebP under 4MB." }, 400);
     if (!rawText && !image) return json({ error: "Add some data first." }, 400);
 
+    // Recommendations from past briefings the owner hasn't checked off yet.
+    // Bounded and sanitized to plain short strings before it ever reaches the
+    // prompt, since this array comes straight from client localStorage.
+    const openActions = Array.isArray(reqBody.openActions)
+      ? reqBody.openActions.map((a) => String(a || "").slice(0, 200)).filter(Boolean).slice(0, 6)
+      : [];
+
     const prompt =
       (period ? `Period: ${period}\n\n` : "") +
       (image ? `The owner uploaded a screenshot of their business data.\n\n` : "") +
       (rawText ? `The owner's business data:\n"""\n${rawText}\n"""\n\n` : "") +
+      (openActions.length
+        ? `Still open from earlier briefings, not yet marked done by the owner:\n${openActions.map((a) => `- ${a}`).join("\n")}\nIf today's data shows movement on any of these, reference it directly. Do not repeat an open item as a new recommendation unless something material changed about it.\n\n`
+        : "") +
       `Write today's briefing as JSON matching the required schema. Follow the truthfulness rules exactly.`;
 
     // An image needs content blocks; plain text can stay a bare string.
