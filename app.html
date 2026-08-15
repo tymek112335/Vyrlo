@@ -412,8 +412,12 @@
   .oa input{margin-top:2px;flex:none;width:18px;height:18px;accent-color:var(--accent)}
   .oa .body{flex:1}
   .oa .t{font-size:14px;font-weight:600;color:var(--ink)}
-  .oa .from{font-size:12px;color:var(--ink-3);margin-top:2px}
+  .oa .r{font-size:12.5px;color:var(--ink-2);margin-top:3px;line-height:1.5}
+  .oa .from{font-size:12px;color:var(--ink-3);margin-top:4px}
+  .oa.done .t,.oa.done .r{text-decoration:line-through;color:var(--ink-3)}
   .oa-empty{font-size:13px;color:var(--ink-3);padding:6px 2px}
+  .oa-section-h{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin:22px 2px 8px}
+  .oa-section-h:first-child{margin-top:0}
   .ask input{width:100%;border:1px solid var(--line-2);background:var(--surface-2);border-radius:12px;padding:13px 15px;font-size:14.5px;color:var(--ink);outline:none}
   .ask .row{display:flex;gap:9px}
   .qa{margin-top:16px;display:flex;flex-direction:column;gap:14px}
@@ -488,6 +492,10 @@
         <button class="nav-item" id="nav-compare">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
           Compare <span class="ready-pill">New</span>
+        </button>
+        <button class="nav-item" id="nav-actions">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Action items
         </button>
         <button class="nav-item" id="nav-profile">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>
@@ -627,6 +635,15 @@ Deep Sleep stock: 41 units left."></textarea>
           <div class="home">
             <div class="greet"><h2>Briefings</h2><p id="hist-sub">Every briefing you've generated.</p></div>
             <div class="recents" id="history-list"></div>
+          </div>
+        </section>
+
+        <!-- ACTION ITEMS -->
+        <section class="view" id="view-actions">
+          <div class="home">
+            <div class="greet"><h2>Action items</h2><p>Everything Vyrlo has recommended, pulled from your recent briefings. Check one off when it's done — it stays here, crossed out.</p></div>
+            <div id="actions-today"></div>
+            <div id="actions-earlier"></div>
           </div>
         </section>
 
@@ -899,13 +916,14 @@ Deep Sleep stock: 41 units left."></textarea>
   function showView(v){
     $$(".view").forEach(function(el){el.classList.remove("on")});
     $("#view-"+v).classList.add("on");
-    $("#page-title").textContent = v==="home"?"Dashboard":v==="upload"?"New briefing":v==="chat"?"Consultant":v==="history"?"Briefings":v==="compare"?"Compare":v==="profile"?"Your business":"Today's briefing";
+    $("#page-title").textContent = v==="home"?"Dashboard":v==="upload"?"New briefing":v==="chat"?"Consultant":v==="history"?"Briefings":v==="compare"?"Compare":v==="profile"?"Your business":v==="actions"?"Action items":"Today's briefing";
     $("#new-briefing").style.display = (v==="briefing")?"":"none";
     closeSidebar(); window.scrollTo(0,0);
     if(v==="home"){ renderHome(); }
     if(v==="history"){ renderHistory(); }
     if(v==="compare"){ renderCompare(); }
     if(v==="profile"){ renderProfile(); }
+    if(v==="actions"){ renderActionsPage(); }
   }
   function renderHistory(){
     var reps=load(LS.reports,[]);
@@ -1608,26 +1626,54 @@ Deep Sleep stock: 41 units left."></textarea>
   function setActionDone(reportId,idx,done){
     var st=actionsState(); st[reportId]=st[reportId]||{}; st[reportId][idx]=!!done; save(LS.actions,st);
   }
-  function openActions(){
+  function allActions(){
     var reps=load(LS.reports,[]).slice(0,5); var out=[];
-    reps.forEach(function(r){
+    reps.forEach(function(r,ri){
       (r.briefing&&r.briefing.recommendations||[]).forEach(function(rec,idx){
-        if(!isActionDone(r.id,idx)) out.push({reportId:r.id,idx:idx,title:rec.title,from:r.label});
+        out.push({reportId:r.id,idx:idx,title:rec.title,reason:rec.reason||"",from:r.label,today:ri===0,done:isActionDone(r.id,idx)});
       });
     });
-    return out.slice(0,6);
+    return out;
+  }
+  function openActions(){ return allActions().filter(function(a){return !a.done}); }
+  function actionRow(a,i,withReason){
+    return '<li class="oa'+(a.done?" done":"")+'" data-i="'+i+'"><input type="checkbox" data-i="'+i+'"'+(a.done?" checked":"")+'><div class="body"><div class="t">'+esc(a.title)+'</div>'
+      +(withReason&&a.reason?'<div class="r">'+esc(a.reason)+'</div>':"")
+      +'<div class="from">from '+esc(a.from)+'</div></div></li>';
+  }
+  function wireActionRows(el,items){
+    items.forEach(function(a,i){
+      var cb=el.querySelector('.oa[data-i="'+i+'"] input');
+      if(!cb) return;
+      cb.addEventListener("change",function(){
+        setActionDone(a.reportId,a.idx,cb.checked);
+        renderOpenActions();
+        if($("#view-actions").classList.contains("on")) renderActionsPage();
+      });
+    });
   }
   function renderOpenActions(){
     var el=$("#open-actions"); if(!el) return;
-    var items=openActions();
+    var items=allActions().slice(0,6);
     if(!items.length){ el.innerHTML=""; return; }
-    el.innerHTML='<div class="card"><div class="sec-h">Still open from past briefings</div><ul class="oa-list">'
-      +items.map(function(a,i){return '<li class="oa" data-i="'+i+'"><input type="checkbox" data-i="'+i+'"><div class="body"><div class="t">'+esc(a.title)+'</div><div class="from">from '+esc(a.from)+'</div></div></li>'}).join("")
-      +'</ul></div>';
-    items.forEach(function(a,i){
-      var cb=el.querySelector('input[data-i="'+i+'"]');
-      cb.addEventListener("change",function(){ setActionDone(a.reportId,a.idx,cb.checked); setTimeout(renderOpenActions,180); });
-    });
+    el.innerHTML='<div class="card"><div class="sec-h">Action items</div><ul class="oa-list">'
+      +items.map(function(a,i){return actionRow(a,i,false)}).join("")+'</ul></div>';
+    wireActionRows(el,items);
+  }
+  function renderActionsPage(){
+    var all=allActions();
+    var today=all.filter(function(a){return a.today});
+    var earlier=all.filter(function(a){return !a.today});
+    var todayEl=$("#actions-today"), earlierEl=$("#actions-earlier");
+    if(!todayEl||!earlierEl) return;
+    todayEl.innerHTML = today.length
+      ? '<div class="oa-section-h">Today\'s tasks</div><ul class="oa-list">'+today.map(function(a,i){return actionRow(a,i,true)}).join("")+'</ul>'
+      : '';
+    earlierEl.innerHTML = earlier.length
+      ? '<div class="oa-section-h">Earlier</div><ul class="oa-list">'+earlier.map(function(a,i){return actionRow(a,i,true)}).join("")+'</ul>'
+      : (today.length?"":'<div class="oa-empty">No recommendations yet — build a briefing first.</div>');
+    wireActionRows(todayEl,today);
+    wireActionRows(earlierEl,earlier);
   }
 
   /* ---------- files ---------- */
@@ -1750,6 +1796,7 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#nav-history").addEventListener("click",function(){showView("history")});
   $("#nav-compare").addEventListener("click",function(){showView("compare")});
   $("#nav-profile").addEventListener("click",function(){showView("profile")});
+  $("#nav-actions").addEventListener("click",function(){showView("actions")});
   $("#pf-save").addEventListener("click",saveProfile);
   $("#pf-clear").addEventListener("click",clearProfile);
   $("#up-profile-link").addEventListener("click",function(){showView("profile")});
