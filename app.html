@@ -264,6 +264,12 @@
   /* daily briefing: trend sparkline */
   .spark-wrap{width:100%}
   .spark{width:100%;height:96px;display:block;overflow:visible}
+  .spark.lg{height:180px}
+  .spark-grid{stroke:var(--line);stroke-width:1}
+  .spark-area{opacity:.14}
+  .spark.up .spark-area{fill:var(--good)}
+  .spark.down .spark-area{fill:var(--bad)}
+  .tr-count{font-size:12px;color:var(--ink-3);margin:-2px 0 12px}
   .spark-line{stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
   .spark.up .spark-line{stroke:var(--good)}
   .spark.down .spark-line{stroke:var(--bad)}
@@ -1513,25 +1519,32 @@ Deep Sleep stock: 41 units left."></textarea>
     var pts=s.points, n=pts.length;
     var proj=projectNext(pts);
     var vals=pts.map(function(p){return p.n}); if(proj) vals=vals.concat([proj.next]);
-    var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals), span=(hi-lo)||1;
-    var W=560,H=110,pad=14, totalPts=n+(proj?1:0);
+    var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+    var padVal=(hi-lo)*0.12||Math.abs(hi)*0.1||1; lo-=padVal; hi+=padVal; // breathing room top/bottom
+    var span=(hi-lo)||1;
+    var W=560,H=180,pad=16, totalPts=n+(proj?1:0);
     function xyAt(i,val){ return {x:pad+(totalPts===1?0:(W-2*pad)*i/(totalPts-1)), y:H-pad-((val-lo)/span)*(H-2*pad)}; }
     var xy=pts.map(function(p,i){ var c=xyAt(i,p.n); return {x:c.x,y:c.y,p:p}; });
     var path=xy.map(function(pt,i){return (i?"L":"M")+pt.x.toFixed(1)+","+pt.y.toFixed(1)}).join(" ");
     var up = xy[xy.length-1].p.n >= xy[0].p.n;
+    // gridlines — three evenly spaced horizontal guides
+    var grid=[0.25,0.5,0.75].map(function(f){ var y=(H-2*pad)*f+pad; return '<line x1="'+pad+'" y1="'+y.toFixed(1)+'" x2="'+(W-pad)+'" y2="'+y.toFixed(1)+'" class="spark-grid"/>'; }).join("");
+    // filled area under the real (non-projected) line
+    var area='M'+xy[0].x.toFixed(1)+','+(H-pad)+' '+xy.map(function(pt){return 'L'+pt.x.toFixed(1)+','+pt.y.toFixed(1)}).join(" ")+' L'+xy[xy.length-1].x.toFixed(1)+','+(H-pad)+' Z';
     var dots=xy.map(function(pt,i){
-      return '<circle cx="'+pt.x.toFixed(1)+'" cy="'+pt.y.toFixed(1)+'" r="'+(i===xy.length-1?4.5:3)+'" class="spark-dot'+(i===xy.length-1?" last":"")+'"><title>'+esc(pt.p.label+": "+pt.p.raw)+'</title></circle>';
+      return '<circle cx="'+pt.x.toFixed(1)+'" cy="'+pt.y.toFixed(1)+'" r="'+(i===xy.length-1?6:4)+'" class="spark-dot'+(i===xy.length-1?" last":"")+'"><title>'+esc(pt.p.label+": "+pt.p.raw)+'</title></circle>';
     }).join("");
     var projLine="", projDot="", projNote="";
     if(proj){
       var pc=xyAt(n,proj.next);
       projLine='<path d="M'+xy[n-1].x.toFixed(1)+','+xy[n-1].y.toFixed(1)+' L'+pc.x.toFixed(1)+','+pc.y.toFixed(1)+'" class="spark-proj"/>';
-      projDot='<circle cx="'+pc.x.toFixed(1)+'" cy="'+pc.y.toFixed(1)+'" r="3.5" class="spark-dot proj"><title>If the recent pace holds: ~'+esc(fmtLikeSeries(proj.next,pts))+'</title></circle>';
+      projDot='<circle cx="'+pc.x.toFixed(1)+'" cy="'+pc.y.toFixed(1)+'" r="5" class="spark-dot proj"><title>If the recent pace holds: ~'+esc(fmtLikeSeries(proj.next,pts))+'</title></circle>';
       var dir=proj.avgDelta>=0?"up":"down";
       projNote='<div class="tr-proj">If the recent pace holds, next briefing lands near <b>~'+esc(fmtLikeSeries(proj.next,pts))+'</b> ('+(dir==="up"?"+":"")+esc(fmtLikeSeries(proj.avgDelta,pts))+' avg per briefing). Plain arithmetic on your last '+n+' readings, not a prediction.</div>';
     }
-    return '<div class="card"><div class="sec-h">'+esc(s.name)+'</div>'
-      +'<div class="spark-wrap"><svg viewBox="0 0 '+W+' '+H+'" class="spark '+(up?"up":"down")+'" preserveAspectRatio="none">'
+    return '<div class="card"><div class="sec-h">'+esc(s.name)+'</div><div class="tr-count">'+n+' briefings tracked this metric</div>'
+      +'<div class="spark-wrap"><svg viewBox="0 0 '+W+' '+H+'" class="spark lg '+(up?"up":"down")+'" preserveAspectRatio="none">'
+      +grid+'<path d="'+area+'" class="spark-area"/>'
       +'<path d="'+path+'" class="spark-line" fill="none"/>'+projLine+dots+projDot+'</svg>'
       +'<div class="spark-labels"><span>'+esc(xy[0].p.label)+' · '+esc(xy[0].p.raw)+'</span><span>'+esc(xy[xy.length-1].p.label)+' · '+esc(xy[xy.length-1].p.raw)+'</span></div></div>'
       +projNote+'</div>';
