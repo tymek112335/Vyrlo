@@ -116,6 +116,7 @@
   .tool p{font-size:13px;color:var(--ink-2);margin:0;line-height:1.5}
   .tool .st{position:absolute;top:16px;right:16px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:20px}
   .tool.live .st{color:var(--good);background:var(--good-weak)}
+  .tool.live .st.pro{color:var(--accent);background:var(--accent-weak)}
   .tool.soon .st{color:var(--ink-3);background:var(--surface-2);border:1px solid var(--line)}
 
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:26px}
@@ -894,12 +895,16 @@ Deep Sleep stock: 41 units left."></textarea>
   applyTheme((function(){try{return localStorage.getItem("vyrlo.theme")}catch(e){return null}})()||"light");
   var lastRaw="", pendingFileText="", pendingImage=null;
   var accessCode=(function(){try{return localStorage.getItem("vyrlo.access")||""}catch(e){return ""}})();
-  function freeUsed(){try{return !!localStorage.getItem("vyrlo.freeUsed")}catch(e){return false}}
-  function markFreeUsed(){try{localStorage.setItem("vyrlo.freeUsed","1")}catch(e){}}
+  // "One free briefing a day" (as promised on the pricing page) — the flag
+  // stores today's date, not just a used/unused bit, so it clears itself
+  // tomorrow instead of gating the free tier forever after one use.
+  function todayKey(){return new Date().toDateString();}
+  function freeUsed(){try{return localStorage.getItem("vyrlo.freeUsed")===todayKey()}catch(e){return false}}
+  function markFreeUsed(){try{localStorage.setItem("vyrlo.freeUsed",todayKey())}catch(e){}}
 
   var TOOLS=[
     {live:true,action:"build",name:"Daily Briefing",desc:"Turn your numbers into a what/why/what-next briefing.",icon:'<path d="M4 19V9l8-6 8 6v10a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/>'},
-    {live:true,action:"chat",name:"AI Consultant",desc:"Chat with an AI that knows your numbers and tells you what to do next.",icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
+    {live:true,proOnly:true,action:"chat",name:"AI Consultant",desc:"Chat with an AI that knows your numbers and tells you what to do next.",icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
     {live:true,action:"compare",name:"Compare",desc:"Put two briefings side by side and see exactly what moved.",icon:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
     {name:"Shopify Connect",desc:"Auto-pull orders daily — no manual export.",icon:'<path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/>'},
     {name:"Stripe",desc:"Bring in payments, refunds and MRR.",icon:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>'},
@@ -1353,8 +1358,9 @@ Deep Sleep stock: 41 units left."></textarea>
     // tools
     $("#tools").innerHTML=TOOLS.map(function(t,i){
       var cls=t.live?"tool live":"tool soon";
+      var proLocked=t.live&&t.proOnly&&!accessCode;
       return '<button class="'+cls+'" '+(t.live?'data-action="'+t.action+'"':'data-soon="'+esc(t.name)+'"')+'>'
-        +'<span class="st">'+(t.live?'Live':'Soon')+'</span>'
+        +'<span class="st'+(proLocked?" pro":"")+'">'+(t.live?(proLocked?"Pro":"Live"):"Soon")+'</span>'
         +'<span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+t.icon+'</svg></span>'
         +'<h4>'+esc(t.name)+'</h4><p>'+esc(t.desc)+'</p></button>';
     }).join("");
@@ -1711,6 +1717,9 @@ Deep Sleep stock: 41 units left."></textarea>
     var reps=load(LS.reports,[]);
     var label=period?period:new Date().toLocaleDateString([], {month:"short",day:"numeric"});
     reps.unshift({id:Date.now(),label:label,date:new Date().toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}),briefing:b,raw:lastRaw});
+    // Matches the pricing page: 7-day history free, unlimited (up to 30 kept
+    // locally either way) on a paid access code.
+    if(!accessCode){ var cutoff=Date.now()-7*24*3600*1000; reps=reps.filter(function(r){return r.id>=cutoff}); }
     save(LS.reports,reps.slice(0,30));
   }
 
@@ -1825,8 +1834,8 @@ Deep Sleep stock: 41 units left."></textarea>
   function showGate(){
     var used=freeUsed();
     $("#gate-free").style.display=used?"none":"";
-    $("#gate-title").textContent=used?"You've used your free briefing":"Unlimited access";
-    $("#gate-sub").textContent=used?"Enter your access code for unlimited briefings on this device.":"Enter your access code for unlimited briefings, or take one free.";
+    $("#gate-title").textContent=used?"You've used today's free briefing":"Unlimited access";
+    $("#gate-sub").textContent=used?"Come back tomorrow for another free one, or enter your access code for unlimited briefings now.":"Enter your access code for unlimited briefings, or take one free.";
     $("#gate-err").textContent="";$("#gate-input").value="";
     $("#gate").classList.add("on");
   }
