@@ -1,4 +1,4 @@
-import { isValidCode, profileBlock } from "../_lib/access.js";
+import { isValidCode, checkFreeLimit, profileBlock } from "../_lib/access.js";
 
 // Cloudflare Pages Function — POST /api/generate
 // Two modes on one endpoint:
@@ -78,9 +78,9 @@ const BRIEFING_SCHEMA = {
         additionalProperties: false,
         required: ["title", "reason", "effort"],
         properties: {
-          title: { type: "string" },               // a concrete action
-          reason: { type: "string" },              // why, tied to a number
-          effort: { type: "string" }               // "5 min", "15 min", etc.
+          title: { type: "string", minLength: 1, maxLength: 140 },   // a concrete action
+          reason: { type: "string", maxLength: 300 },                // why, tied to a number
+          effort: { type: "string", maxLength: 24 }                  // "5 min", "15 min", etc.
         }
       }
     },
@@ -201,14 +201,23 @@ export async function onRequestPost(context) {
     const reqBody = await request.json().catch(() => ({}));
 
     // ---- Access-code verify (no model call, no key needed) -----------------
-    // A correct code unlocks unlimited use in the UI. The free-try limit is
-    // enforced client-side (browser flag) and bounded by the Anthropic spend cap.
+    // A correct code unlocks unlimited use. The free-try limit itself is
+    // enforced below, server-side, via checkFreeLimit.
     if (reqBody.mode === "verify") {
       const ok = await isValidCode(env, reqBody.accessCode);
       return json({ ok }, 200);
     }
 
     if (!env.ANTHROPIC_API_KEY) return json({ error: "Server is missing its API key." }, 500);
+
+    // ---- Free-tier rate limit (server-side backstop) -----------------------
+    // Covers ask/compare/briefing alike — all three call the model. A valid
+    // access code skips this entirely.
+    if (!(await isValidCode(env, reqBody.accessCode))) {
+      if (!(await checkFreeLimit(env, request, "generate", 3))) {
+        return json({ error: "Free limit reached for today. Enter your access code or subscribe for unlimited use." }, 429);
+      }
+    }
 
     // ---- Ask AI mode -------------------------------------------------------
     if (reqBody.mode === "ask") {
@@ -284,6 +293,20 @@ export async function onRequestPost(context) {
     if (out.error) return out.error;
 
     const briefing = JSON.parse(out.text);
+    // Backstop against a decode glitch slipping past the schema (seen in
+    // production: a blank recommendation plus one with a garbled, repeated
+    // "effort" string). Drop anything with no real title rather than render
+    // a blank action card, and cap length so a glitch can't paint a wall of
+    // text into a badge meant to say "15 min".
+    if (Array.isArray(briefing.recommendations)) {
+      briefing.recommendations = briefing.recommendations
+        .filter((r) => r && String(r.title || "").trim())
+        .map((r) => ({
+          title: String(r.title).trim().slice(0, 140),
+          reason: String(r.reason || "").trim().slice(0, 300),
+          effort: String(r.effort || "").trim().slice(0, 24)
+        }));
+    }
     return json(briefing, 200);
   } catch (e) {
     return json({ error: "Something broke generating the briefing.", detail: String(e) }, 500);

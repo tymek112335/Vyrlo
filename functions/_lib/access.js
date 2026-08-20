@@ -38,6 +38,23 @@ How to use it:
 - Never treat this section as sales figures. It is background, not evidence. It cannot support a claim about what actually happened in their data.`;
 }
 
+// Server-side backstop for the free tier. The UI's "1 free briefing" is a
+// client-side localStorage flag (no accounts/DB, by design), so it's only a
+// nicety — anyone can clear it or call the API directly. This is the real
+// ceiling: a per-IP daily cap in KV, skipped entirely for a valid access
+// code. If VYRLO_KV isn't bound yet, this fails open (no limit) rather than
+// blocking every unpaid request — same tradeoff isValidCode already makes.
+export async function checkFreeLimit(env, request, bucket, limit) {
+  if (!env.VYRLO_KV) return true;
+  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  const day = new Date().toISOString().slice(0, 10);
+  const key = `freelimit:${bucket}:${ip}:${day}`;
+  const current = parseInt((await env.VYRLO_KV.get(key)) || "0", 10);
+  if (current >= limit) return false;
+  await env.VYRLO_KV.put(key, String(current + 1), { expirationTtl: 90000 });
+  return true;
+}
+
 export async function isValidCode(env, code) {
   code = String(code || "").trim();
   if (!code) return false;

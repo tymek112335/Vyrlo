@@ -7,6 +7,8 @@
 // what they think is wrong. None of that is knowable from a website, and
 // inventing it would break the no-fabrication rule the whole product rests on.
 
+import { checkFreeLimit } from "../_lib/access.js";
+
 const READER_SYSTEM = `You read a small e-commerce store's public web pages and extract only what is genuinely visible there.
 
 You are filling in the start of a business profile so the owner doesn't have to type it themselves. They will review and correct everything you write, so be accurate rather than impressive.
@@ -96,6 +98,10 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   try {
     if (!env.ANTHROPIC_API_KEY) return json({ error: "Server is missing its API key." }, 500);
+
+    if (!(await checkFreeLimit(env, request, "readstore", 5))) {
+      return json({ error: "Too many store reads today — try again tomorrow." }, 429);
+    }
 
     const body = await request.json().catch(() => ({}));
     const url = safeUrl(String(body.url || "").trim());
