@@ -1609,7 +1609,7 @@ Deep Sleep stock: 41 units left."></textarea>
     $("#bwrap").innerHTML=""
       +(opts.preview?'<div class="preview-note">Preview mode — the live engine isn\'t reachable yet, so this is a sample. Once the API is deployed, this shows your real numbers.</div>':'')
       +'<div class="greet2"><h2>'+esc(greetWord())+(name?', '+esc(name):'')+'.</h2><div class="gen">Here\'s today\'s briefing · Generated <b>'+nowTime()+'</b></div></div>'
-      +(opts.preview?'':'<div style="display:flex;gap:8px;margin:-8px 0 18px"><button class="btn sm" id="b-download">Save / download</button><button class="btn sm" id="b-copy">Copy</button></div>')
+      +(opts.preview?'':'<div style="display:flex;gap:8px;margin:-8px 0 18px"><button class="btn sm" id="b-download">Save / download</button><button class="btn sm" id="b-copy">Copy</button><button class="btn sm" id="b-email">Email me →</button></div>')
       +'<div class="card hero-b"><div class="head">'+esc(sum.headline||"")+'</div><div class="body">'+(sum.body||"")+'</div>'
       +'<div class="health"><span class="badge '+(sum.health||"good")+'"><span class="dot"></span>'+esc(healthLabel(sum.health))+'</span>'+(sum.reading_time?'<span class="rt">Reading time · '+esc(sum.reading_time)+'</span>':'')+'</div></div>'
       +keyStatsHtml(b.what_changed)
@@ -1663,10 +1663,27 @@ Deep Sleep stock: 41 units left."></textarea>
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast("Briefing copied.")},function(){toast("Copy failed.")});}
     else{toast("Copy not supported here.");}
   }
+  // On-demand send of the briefing on screen — not the automatic daily cron
+  // (that needs an always-on data source, still "Soon"). Server rebuilds the
+  // email body from the briefing JSON itself rather than trusting raw text.
+  function emailBriefing(b){
+    var addr=prompt("Send this briefing to:",settings.emailAddress||"");
+    if(addr===null)return;
+    addr=addr.trim();
+    if(!addr||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)){toast("That doesn't look like a valid email.");return}
+    settings.emailAddress=addr;save(LS.settings,settings);
+    var btn=$("#b-email");if(btn){btn.disabled=true;btn.textContent="Sending…"}
+    fetch("/api/send-briefing",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:addr,briefing:b,accessCode:accessCode})})
+      .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j&&j.error)||"Couldn't send.");return j})})
+      .then(function(){toast("Sent to "+addr+".")})
+      .catch(function(err){toast(String((err&&err.message)||"Couldn't send — try again."))})
+      .then(function(){if(btn){btn.disabled=false;btn.textContent="Email me →"}});
+  }
   function wireBriefing(b){
     $$(".metric").forEach(function(el){el.addEventListener("click",function(){el.classList.toggle("open");var m=el.querySelector(".more");if(m)m.textContent=el.classList.contains("open")?"Hide ▾":"Details ▸"})});
     var dl=$("#b-download");if(dl)dl.addEventListener("click",function(){downloadBriefing(b)});
     var cp=$("#b-copy");if(cp)cp.addEventListener("click",function(){copyBriefing(b)});
+    var em=$("#b-email");if(em)em.addEventListener("click",function(){emailBriefing(b)});
     var send=$("#ask-send"),input=$("#ask-input");
     if(send&&input){
       var ask=function(){
