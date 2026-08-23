@@ -1,0 +1,30 @@
+# Drives the automatic morning briefing.
+#
+# Cloudflare Pages has no scheduled handler, so the hourly tick comes from
+# here and /api/cron does the work. The endpoint only sends to subscribers
+# whose chosen hour matches the current UTC hour and who haven't been sent to
+# today, so running every hour is correct and re-running is harmless.
+#
+# Needs one repository secret: CRON_SECRET, matching the Cloudflare secret of
+# the same name.
+
+name: Daily briefing
+
+on:
+  schedule:
+    - cron: "5 * * * *" # every hour, five past
+  workflow_dispatch: # lets you fire one by hand from the Actions tab
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the daily send
+        run: |
+          code=$(curl -sS -o /tmp/out.json -w "%{http_code}" \
+            -X POST "https://vyrlo.cc/api/cron" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}")
+          echo "HTTP $code"
+          cat /tmp/out.json
+          echo
+          test "$code" = "200"
