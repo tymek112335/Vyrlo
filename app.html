@@ -1807,7 +1807,9 @@ Deep Sleep stock: 41 units left."></textarea>
         renderConnect();
         toast("Connected to "+(d.name||shop)+".");
       })
-      .catch(function(e){ fail((e&&e.error)||"Couldn't reach that store."); })
+      // Show Shopify's own words too. The generic line alone kept sending
+      // people back to re-copy a key that was already right.
+      .catch(function(e){ fail(((e&&e.error)||"Couldn't reach that store.")+(e&&e.detail?" — Shopify said: "+e.detail:"")); })
       .then(function(){ btn.disabled=false; btn.textContent="Connect store"; });
   }
 

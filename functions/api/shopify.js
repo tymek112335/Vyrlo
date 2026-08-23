@@ -71,11 +71,18 @@ export async function onRequestPost(context) {
         return json({ ok: true, name: info.name, tz: info.tz }, 200);
       } catch (e) {
         const msg = String(e);
+        // Reaching here means the credentials were good enough to get a
+        // token and the store then refused the read — which is a scope or
+        // install problem, not a wrong-key problem. Saying "bad token" here
+        // sent the owner back to re-copy a key that was already correct.
         if (/401|403/.test(msg)) {
-          return json({ error: "Shopify rejected that token. Check it's an Admin API access token for this store, with read_orders and read_products turned on." }, 400);
+          return json({
+            error: "Shopify issued a token but wouldn't return store data. The app is missing read_orders and read_products, or it isn't installed on this store.",
+            detail: msg.slice(0, 300)
+          }, 400);
         }
         if (/404/.test(msg)) return json({ error: "That store domain doesn't exist. It should look like yourstore.myshopify.com." }, 400);
-        return json({ error: "Couldn't reach that store.", detail: msg.slice(0, 200) }, 400);
+        return json({ error: "Couldn't reach that store.", detail: msg.slice(0, 300) }, 400);
       }
     }
 
