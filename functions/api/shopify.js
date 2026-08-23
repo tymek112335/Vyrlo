@@ -19,7 +19,7 @@
 //   default        → pull the numbers and build a briefing
 
 import { isValidCode, checkFreeLimit } from "../_lib/access.js";
-import { normalizeShop, pullStoreNumbers, testConnection } from "../_lib/shopify.js";
+import { normalizeShop, pullStoreNumbers, testConnection, resolveToken } from "../_lib/shopify.js";
 
 function json(obj, status) {
   return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
@@ -33,18 +33,27 @@ export async function onRequestPost(context) {
     const paid = await isValidCode(env, code);
     const isOwner = !!(env.ACCESS_CODE && code === env.ACCESS_CODE);
 
-    // Resolve which store to pull from.
+    // Resolve which store to pull from. Post-2026 apps send clientId +
+    // clientSecret and get a 24h token minted here; pre-2026 custom apps send
+    // the permanent token they already hold.
     let shop = normalizeShop(body.shop);
-    let token = String(body.token || "").trim();
+    let token = null;
+    if (shop) {
+      try {
+        token = await resolveToken(shop, body);
+      } catch (e) {
+        return json({ error: "Shopify rejected those app credentials. Check the Client ID and Client secret, and that the app is installed on this store.", detail: String(e).slice(0, 200) }, 400);
+      }
+    }
 
     if (!shop || !token) {
-      // No credentials supplied — fall back to the owner's env-configured
+      // No usable credentials — fall back to the owner's env-configured
       // store, and only for the owner.
       if (!isOwner) {
-        return json({ error: "Connect your Shopify store first — add your store domain and access token under Shopify Connect." }, 400);
+        return json({ error: "Connect your Shopify store first — add your store domain and app credentials under Shopify Connect." }, 400);
       }
       shop = normalizeShop(env.SHOPIFY_SHOP);
-      token = String(env.SHOPIFY_TOKEN || "").trim();
+      token = String(env.SHOPIFY_TOKEN || "").trim() || null;
       if (!shop || !token) {
         return json({ error: "No Shopify store is connected." }, 400);
       }

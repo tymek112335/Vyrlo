@@ -5,14 +5,15 @@
 // for one reason: an email that arrives at 7am has to be built while nobody
 // is at the keyboard, so the job needs its own copy of the store credentials.
 //
-// Stored in VYRLO_KV as daily:<accessCode>. The Shopify token is encrypted
+// Stored in VYRLO_KV as daily:<accessCode>. The Shopify credential — a client
+// secret for post-2026 apps, a legacy token for older ones — is encrypted
 // (see _lib/crypto.js); nothing is stored at all if TOKEN_SECRET is missing.
 //
 // Actions: {action:"get"|"save"|"delete"}
 
 import { isValidCode } from "../_lib/access.js";
 import { encryptSecret } from "../_lib/crypto.js";
-import { normalizeShop, testConnection } from "../_lib/shopify.js";
+import { normalizeShop, testConnection, resolveToken } from "../_lib/shopify.js";
 
 function json(obj, status) {
   return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
@@ -67,8 +68,10 @@ export async function onRequestPost(context) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "That doesn't look like a valid email." }, 400);
 
     const shop = normalizeShop(body.shop);
-    const token = String(body.token || "").trim();
-    if (!shop || !token) {
+    const legacyToken = String(body.token || "").trim();
+    const clientId = String(body.clientId || "").trim();
+    const clientSecret = String(body.clientSecret || "").trim();
+    if (!shop || (!legacyToken && !(clientId && clientSecret))) {
       return json({ error: "The daily email needs your Shopify store connected — there has to be fresh data to brief on each morning." }, 400);
     }
 
@@ -81,8 +84,11 @@ export async function onRequestPost(context) {
 
     // Verify the credentials before promising to use them every morning —
     // a subscription that 401s daily is worse than one that never starts.
+    // For post-2026 apps this also proves the client-credentials exchange
+    // works, which is the part that has to keep working unattended.
     try {
-      await testConnection(shop, token);
+      const probe = await resolveToken(shop, { token: legacyToken, clientId, clientSecret });
+      await testConnection(shop, probe);
     } catch (e) {
       return json({ error: "Shopify rejected those credentials, so the daily email wasn't switched on. Reconnect your store and try again." }, 400);
     }
@@ -90,7 +96,11 @@ export async function onRequestPost(context) {
     const rec = {
       email,
       shop,
-      token: await encryptSecret(env, token),
+      // Only one of these is ever set. The client secret is as sensitive as
+      // the old permanent token, so it gets the same encryption.
+      token: legacyToken ? await encryptSecret(env, legacyToken) : null,
+      clientId: clientId || null,
+      clientSecret: clientSecret ? await encryptSecret(env, clientSecret) : null,
       hourUtc,
       localTime: String(body.localTime || "").slice(0, 5),
       profile: body.profile && typeof body.profile === "object" ? body.profile : null,

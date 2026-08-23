@@ -19,6 +19,44 @@ export function normalizeShop(input) {
   return SHOP_RE.test(shop) ? shop : null;
 }
 
+// Shopify deleted admin-created custom apps on 2026-01-01, and with them the
+// permanent shpat_ token this file originally expected. Apps made in the Dev
+// Dashboard hand out a client ID and secret instead, exchanged here for an
+// access token that lives 24 hours (86399s, per Shopify) — so there is nothing
+// durable to store and every pull mints its own. Only works when the app and
+// the store are in the same Shopify organisation, which is always true for a
+// merchant connecting their own store.
+export async function mintToken(shop, clientId, clientSecret) {
+  const resp = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: String(clientId),
+      client_secret: String(clientSecret)
+    })
+  });
+  if (!resp.ok) {
+    const detail = await resp.text();
+    throw new Error("Shopify token exchange " + resp.status + ": " + detail.slice(0, 300));
+  }
+  const data = await resp.json();
+  if (!data.access_token) throw new Error("Shopify returned no access token.");
+  return data.access_token;
+}
+
+// Resolves whichever credential style the caller has into a usable token.
+// Legacy custom apps created before 2026 still hold a working shpat_ token,
+// so both paths stay supported rather than breaking existing connections.
+export async function resolveToken(shop, creds) {
+  const token = String((creds && creds.token) || "").trim();
+  if (token) return token;
+  const id = String((creds && creds.clientId) || "").trim();
+  const secret = String((creds && creds.clientSecret) || "").trim();
+  if (!id || !secret) return null;
+  return mintToken(shop, id, secret);
+}
+
 async function shopFetch(shop, token, path) {
   const resp = await fetch(`https://${shop}/admin/api/${API_VERSION}/${path}`, {
     headers: { "X-Shopify-Access-Token": token, "content-type": "application/json" }

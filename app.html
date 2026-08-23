@@ -703,14 +703,16 @@ Deep Sleep stock: 41 units left."></textarea>
             <div class="conn-state" id="conn-state"><span class="conn-dot"></span><span id="conn-text">Not connected yet.</span></div>
 
             <div class="pf-read">
-              <h3>Create a read-only token</h3>
-              <p>Vyrlo only ever reads. It can't change prices, edit products or touch orders — the token below is created with read permissions only, and you can revoke it in Shopify at any time.</p>
+              <h3>Create a read-only app</h3>
+              <p>Vyrlo only ever reads. It can't change prices, edit products or touch orders, and you can revoke its access in Shopify at any time.</p>
               <ol class="vy-steps">
-                <li>In Shopify admin, go to <b>Settings → Apps and sales channels → Develop apps</b>.</li>
-                <li>Click <b>Create an app</b>, name it "Vyrlo", then <b>Configure Admin API scopes</b>.</li>
-                <li>Tick exactly two: <b>read_orders</b> and <b>read_products</b>. Nothing else.</li>
-                <li><b>Install app</b>, then reveal and copy the <b>Admin API access token</b> (starts with <code>shpat_</code>).</li>
+                <li>In Shopify admin, go to <b>Settings → Apps and sales channels → Develop apps</b>, then <b>Build apps using Dev Dashboard</b>.</li>
+                <li><b>Create app</b>, name it "Vyrlo".</li>
+                <li>Under scopes, tick exactly two: <b>read_orders</b> and <b>read_products</b>. Nothing else.</li>
+                <li><b>Install</b> it on your store — the credentials below don't work until it's installed.</li>
+                <li>Open <b>API key</b> / <b>Client credentials</b> and copy the <b>Client ID</b> and <b>Client secret</b>.</li>
               </ol>
+              <p class="note">Shopify retired permanent <code>shpat_</code> tokens on 1 January 2026. Apps now hand out a client ID and secret, and Vyrlo exchanges them for a token that expires every 24 hours — so there's no long-lived key sitting anywhere. If you have an older custom app that still has a working <code>shpat_</code> token, paste it in the Client secret box on its own and leave Client ID empty.</p>
             </div>
 
             <div class="pf-q">
@@ -720,9 +722,15 @@ Deep Sleep stock: 41 units left."></textarea>
             </div>
 
             <div class="pf-q">
-              <label for="conn-token">Admin API access token</label>
-              <div class="pf-help">Stored in this browser only. It's sent with each pull and nothing else keeps a copy — unless you switch on the daily email, which needs one to run while you're asleep.</div>
-              <input id="conn-token" type="password" placeholder="shpat_..." autocomplete="off" spellcheck="false">
+              <label for="conn-id">Client ID</label>
+              <div class="pf-help">From your app's API key section. Leave empty if you're pasting an old shpat_ token below.</div>
+              <input id="conn-id" placeholder="29d8ee6d00edb7df214a4bb..." autocomplete="off" spellcheck="false">
+            </div>
+
+            <div class="pf-q">
+              <label for="conn-token">Client secret</label>
+              <div class="pf-help">Stored in this browser only. It's sent with each pull and nothing else keeps a copy — unless you switch on the daily email, which needs it to run while you're asleep.</div>
+              <input id="conn-token" type="password" placeholder="Client secret, or an old shpat_ token" autocomplete="off" spellcheck="false">
             </div>
 
             <div class="pf-err" id="conn-err" hidden></div>
@@ -1736,7 +1744,21 @@ Deep Sleep stock: 41 units left."></textarea>
      with each pull; the server keeps no copy unless the owner switches on the
      daily email, which cannot work any other way. */
   var connect=load(LS.connect,null);
-  function connectedShop(){ return (connect && connect.shop && connect.token) ? connect : null; }
+  // A connection is usable with either credential style: post-2026 apps give
+  // a client id + secret, pre-2026 ones a permanent shpat_ token.
+  function connectedShop(){
+    if(!connect||!connect.shop) return null;
+    if(connect.clientId&&connect.clientSecret) return connect;
+    if(connect.token) return connect;
+    return null;
+  }
+  // What /api/shopify and /api/daily need to reach the store.
+  function connCreds(){
+    var c=connectedShop(); if(!c) return {};
+    return c.clientId&&c.clientSecret
+      ? {shop:c.shop,clientId:c.clientId,clientSecret:c.clientSecret}
+      : {shop:c.shop,token:c.token};
+  }
   function validShopDomain(v){ return /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(String(v||"").trim()); }
 
   function syncShopifyButtons(){
@@ -1747,13 +1769,14 @@ Deep Sleep stock: 41 units left."></textarea>
   function renderConnect(){
     var st=$("#conn-state"), tx=$("#conn-text");
     $("#conn-shop").value=(connect&&connect.shop)||"";
-    $("#conn-token").value=(connect&&connect.token)||"";
+    $("#conn-id").value=(connect&&connect.clientId)||"";
+    $("#conn-token").value=(connect&&(connect.clientSecret||connect.token))||"";
     if(connectedShop()){
       st.className="conn-state on";
       tx.textContent=(connect.name?connect.name+" — ":"")+connect.shop+" is connected. Vyrlo can pull yesterday's orders on its own.";
     } else {
       st.className="conn-state";
-      tx.textContent="Not connected yet. Add your store domain and a read-only token below.";
+      tx.textContent="Not connected yet. Add your store domain and your app's client credentials below.";
     }
     $("#conn-err").hidden=true;
     syncShopifyButtons();
@@ -1761,18 +1784,25 @@ Deep Sleep stock: 41 units left."></textarea>
 
   function connSave(){
     var shop=$("#conn-shop").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"").toLowerCase();
-    var token=$("#conn-token").value.trim();
+    var clientId=$("#conn-id").value.trim();
+    var secret=$("#conn-token").value.trim();
     var err=$("#conn-err");
     function fail(m){ err.textContent=m; err.hidden=false; }
     err.hidden=true;
     if(!validShopDomain(shop)) return fail("That should be your myshopify.com domain — for example yourstore.myshopify.com.");
-    if(!token) return fail("Paste the Admin API access token from the app you created.");
+    if(!secret) return fail("Paste your app's Client secret.");
+    // A shpat_ value in the secret box is a legacy token, not a secret — send
+    // it as one, so old custom apps keep working without a second field.
+    var legacy=/^shp(at|ca|pa|ss)_/.test(secret)||!clientId;
+    if(!legacy&&!clientId) return fail("Paste the Client ID too, from the same screen as the secret.");
+    var creds=legacy?{token:secret}:{clientId:clientId,clientSecret:secret};
     var btn=$("#conn-save"); btn.disabled=true; btn.textContent="Checking…";
     fetch("/api/shopify",{method:"POST",headers:{"content-type":"application/json"},
-      body:JSON.stringify({mode:"test",shop:shop,token:token,accessCode:accessCode})})
+      body:JSON.stringify(Object.assign({mode:"test",shop:shop,accessCode:accessCode},creds))})
       .then(function(r){ return r.json().then(function(j){ return r.ok?j:Promise.reject(j); }); })
       .then(function(d){
-        connect={shop:shop,token:token,name:d.name||""};
+        connect=legacy?{shop:shop,token:secret,name:d.name||""}
+                      :{shop:shop,clientId:clientId,clientSecret:secret,name:d.name||""};
         save(LS.connect,connect);
         renderConnect();
         toast("Connected to "+(d.name||shop)+".");
@@ -1954,8 +1984,8 @@ Deep Sleep stock: 41 units left."></textarea>
     var hourUtc=((Math.round(localHour-offsetH))%24+24)%24;
     var btn=$("#dl-save"); btn.disabled=true; btn.textContent="Switching on…";
     fetch("/api/daily",{method:"POST",headers:{"content-type":"application/json"},
-      body:JSON.stringify({action:"save",accessCode:accessCode,email:email,shop:c.shop,token:c.token,
-        hourUtc:hourUtc,localTime:t,profile:profile})})
+      body:JSON.stringify(Object.assign({action:"save",accessCode:accessCode,email:email,
+        hourUtc:hourUtc,localTime:t,profile:profile},connCreds()))})
       .then(function(r){ return r.json().then(function(j){ return r.ok?j:Promise.reject(j); }); })
       .then(function(){
         settings.emailAddress=email; save(LS.settings,settings);
@@ -2135,8 +2165,8 @@ Deep Sleep stock: 41 units left."></textarea>
     if(!c && !accessCode){ showView("connect"); toast("Connect your store first."); return; }
     var started=Date.now(); startAnalyze();
     fetch("/api/shopify",{method:"POST",headers:{"content-type":"application/json"},
-      body:JSON.stringify({accessCode:accessCode,shop:c?c.shop:"",token:c?c.token:"",
-        profile:profile,openActions:openActions().map(function(a){return a.title}),watchlist:watchLines()})})
+      body:JSON.stringify(Object.assign({accessCode:accessCode,
+        profile:profile,openActions:openActions().map(function(a){return a.title}),watchlist:watchLines()},connCreds()))})
       .then(function(r){ return r.json().then(function(j){ return r.ok?j:Promise.reject(j); }); })
       .then(function(d){ if(d.error) throw new Error(d.error); lastRaw=d.rawText||""; var w=Math.max(0,2200-(Date.now()-started)); setTimeout(function(){ finishAnalyze(function(){ saveReport(d.briefing,"Shopify"); render(d.briefing,{}); }); },w); })
       .catch(function(err){ finishAnalyze(function(){ toast((err&&err.error)||"Shopify pull failed."); }); });

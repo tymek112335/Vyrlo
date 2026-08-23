@@ -13,7 +13,7 @@
 // Auth: the x-cron-secret header must equal CRON_SECRET.
 
 import { decryptSecret } from "../_lib/crypto.js";
-import { pullStoreNumbers } from "../_lib/shopify.js";
+import { pullStoreNumbers, resolveToken } from "../_lib/shopify.js";
 import { briefingToText, sendMail } from "../_lib/email.js";
 
 // One invocation's worth of work. Well above any plausible subscriber count
@@ -36,7 +36,14 @@ function secretMatches(a, b) {
 }
 
 async function runOne(env, origin, code, rec) {
-  const token = await decryptSecret(env, rec.token);
+  // Post-2026 apps store a client secret and mint a fresh 24h token on every
+  // run; pre-2026 ones store the permanent token itself. Either way nothing
+  // long-lived is held in memory beyond this call.
+  const creds = rec.clientSecret
+    ? { clientId: rec.clientId, clientSecret: await decryptSecret(env, rec.clientSecret) }
+    : { token: await decryptSecret(env, rec.token) };
+  const token = await resolveToken(rec.shop, creds);
+  if (!token) throw new Error("No usable Shopify credentials on this subscription.");
   const pulled = await pullStoreNumbers(rec.shop, token);
 
   const gen = await fetch(`${origin}/api/generate`, {
