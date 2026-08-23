@@ -1,8 +1,9 @@
 // Cloudflare Pages Function - POST /api/chat
 // Consultant chat. Multi-turn conversation with Claude, grounded in the
-// owner's latest briefing + data. Gated behind ACCESS_CODE (cost control).
+// owner's latest briefing + data. Open to free users under a per-IP daily
+// cap; an access code lifts the cap.
 
-import { isValidCode, profileBlock } from "../_lib/access.js";
+import { isValidCode, checkFreeLimit, profileBlock } from "../_lib/access.js";
 
 const CONSULTANT_SYSTEM = `You are Vyrlo's business consultant for the owner of a small e-commerce store. You talk like a sharp, blunt operator who has seen a lot of small stores: practical, numbers-first, no fluff, no corporate hedging.
 
@@ -22,8 +23,14 @@ export async function onRequestPost(context) {
   try {
     const body = await context.request.json().catch(() => ({}));
 
+    // The consultant is the clearest demonstration of what Vyrlo actually is
+    // — an analyst that says "your data can't tell me that" — so it's open
+    // without a code. Every turn is still a real model call, so free use is
+    // capped per IP per day rather than unlimited.
     if (!(await isValidCode(env, body.accessCode))) {
-      return json({ error: "Enter your access code to use the consultant." }, 403);
+      if (!(await checkFreeLimit(env, context.request, "chat", 10))) {
+        return json({ error: "That's today's free consultant messages used up. Enter your access code or subscribe for unlimited chat." }, 429);
+      }
     }
     if (!env.ANTHROPIC_API_KEY) return json({ error: "Server is missing its API key." }, 500);
 

@@ -481,6 +481,38 @@
     .metrics{grid-template-columns:1fr}
     .hero-b{padding:22px}
   }
+  /* Shopify Connect / Daily Email / Watchlist */
+  .vy-row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  .vy-row .btn{flex:0 0 auto}
+  .conn-state{display:flex;align-items:center;gap:9px;font-size:13px;border:1px solid var(--line-2);
+    border-radius:12px;padding:11px 13px;margin-bottom:16px;background:var(--surface);color:var(--ink-2)}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--ink-3);flex:0 0 auto}
+  .conn-state.on{border-color:var(--good);background:var(--good-weak);color:var(--ink)}
+  .conn-state.on .conn-dot{background:var(--good)}
+  .conn-state.err{border-color:var(--bad);background:var(--bad-weak);color:var(--ink)}
+  .conn-state.err .conn-dot{background:var(--bad)}
+  .vy-steps{counter-reset:vs;margin:0 0 18px;padding:0;list-style:none}
+  .vy-steps li{counter-increment:vs;position:relative;padding-left:30px;margin-bottom:9px;font-size:13px;
+    color:var(--ink-2);line-height:1.6}
+  .vy-steps li:before{content:counter(vs);position:absolute;left:0;top:1px;width:20px;height:20px;
+    border-radius:50%;background:var(--accent-weak);color:var(--accent);font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center}
+  .wl-list{display:flex;flex-direction:column;gap:9px;margin-bottom:18px}
+  .wl-item{display:flex;align-items:center;gap:11px;border:1px solid var(--line-2);border-radius:12px;
+    padding:11px 13px;background:var(--surface)}
+  .wl-item .wl-name{font-weight:600;font-size:13.5px;color:var(--ink)}
+  .wl-item .wl-rule{font-size:12.5px;color:var(--ink-3)}
+  .wl-item .wl-now{margin-left:auto;font-size:12.5px;font-weight:600;color:var(--ink-3);text-align:right}
+  .wl-item.hit{border-color:var(--bad);background:var(--bad-weak)}
+  .wl-item.hit .wl-now{color:var(--bad)}
+  .wl-item.ok .wl-now{color:var(--good)}
+  .wl-x{background:none;border:0;color:var(--ink-3);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px}
+  .wl-x:hover{color:var(--bad)}
+  .alert-bar{border:1px solid var(--bad);background:var(--bad-weak);border-radius:12px;padding:12px 14px;
+    margin-bottom:16px}
+  .alert-bar h4{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--ink)}
+  .alert-bar ul{margin:0;padding-left:17px}
+  .alert-bar li{font-size:13px;color:var(--ink-2);line-height:1.6}
 </style>
 </head>
 <body>
@@ -514,9 +546,9 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>
           Your business <span class="ready-pill warn" id="pf-pill">Important</span>
         </button>
-        <button class="nav-item soon" data-soon="Shopify connect">
+        <button class="nav-item" id="nav-connect">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/></svg>
-          Shopify Connect <span class="soon-pill">Soon</span>
+          Shopify Connect <span class="ready-pill" id="conn-pill">New</span>
         </button>
         <button class="nav-item soon" data-soon="Stripe connect">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>
@@ -530,9 +562,13 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg>
           Trends <span class="ready-pill">New</span>
         </button>
-        <button class="nav-item soon" data-soon="Daily email briefing">
+        <button class="nav-item" id="nav-watch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Watchlist <span class="ready-pill" id="watch-pill">New</span>
+        </button>
+        <button class="nav-item" id="nav-daily">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-          Daily Email <span class="soon-pill">Soon</span>
+          Daily Email <span class="ready-pill" id="daily-pill">New</span>
         </button>
       </nav>
       <div class="sb-foot">
@@ -656,6 +692,105 @@ Deep Sleep stock: 41 units left."></textarea>
           <div class="home">
             <div class="greet"><h2>Trends</h2><p>Every metric across your saved briefings, and the plain-math line if the recent pace continues. No AI call, no forecast — just your own numbers extended forward.</p></div>
             <div id="trends-body"></div>
+          </div>
+        </section>
+
+        <!-- SHOPIFY CONNECT -->
+        <section class="view" id="view-connect">
+          <div class="home">
+            <div class="greet"><h2>Shopify Connect</h2><p>Connect your store once and Vyrlo pulls yesterday's orders itself. No CSV export, no pasting.</p></div>
+
+            <div class="conn-state" id="conn-state"><span class="conn-dot"></span><span id="conn-text">Not connected yet.</span></div>
+
+            <div class="pf-read">
+              <h3>Create a read-only token</h3>
+              <p>Vyrlo only ever reads. It can't change prices, edit products or touch orders — the token below is created with read permissions only, and you can revoke it in Shopify at any time.</p>
+              <ol class="vy-steps">
+                <li>In Shopify admin, go to <b>Settings → Apps and sales channels → Develop apps</b>.</li>
+                <li>Click <b>Create an app</b>, name it "Vyrlo", then <b>Configure Admin API scopes</b>.</li>
+                <li>Tick exactly two: <b>read_orders</b> and <b>read_products</b>. Nothing else.</li>
+                <li><b>Install app</b>, then reveal and copy the <b>Admin API access token</b> (starts with <code>shpat_</code>).</li>
+              </ol>
+            </div>
+
+            <div class="pf-q">
+              <label for="conn-shop">Your store domain</label>
+              <div class="pf-help">The myshopify.com one, not your custom domain.</div>
+              <input id="conn-shop" placeholder="yourstore.myshopify.com" autocomplete="off" spellcheck="false">
+            </div>
+
+            <div class="pf-q">
+              <label for="conn-token">Admin API access token</label>
+              <div class="pf-help">Stored in this browser only. It's sent with each pull and nothing else keeps a copy — unless you switch on the daily email, which needs one to run while you're asleep.</div>
+              <input id="conn-token" type="password" placeholder="shpat_..." autocomplete="off" spellcheck="false">
+            </div>
+
+            <div class="pf-err" id="conn-err" hidden></div>
+            <div class="vy-row">
+              <button class="btn" id="conn-save">Connect store</button>
+              <button class="btn ghost" id="conn-pull">Build a briefing now</button>
+              <button class="btn ghost" id="conn-clear">Disconnect</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- WATCHLIST -->
+        <section class="view" id="view-watch">
+          <div class="home">
+            <div class="greet"><h2>Watchlist</h2><p>Pin the numbers you actually care about. Every briefing then says where each one stands — and if a number crosses a line you set, you see it the moment the briefing lands.</p></div>
+
+            <div id="watch-list"></div>
+
+            <div class="pf-read">
+              <h3>Watch a metric</h3>
+              <p>Metrics come from your saved briefings, so build one first if the list is empty. The check is plain arithmetic against your own saved figures — it costs nothing and never calls the model.</p>
+              <div class="pf-q">
+                <label for="wl-metric">Metric</label>
+                <select id="wl-metric"></select>
+              </div>
+              <div class="pf-q">
+                <label for="wl-dir">Alert me when it goes</label>
+                <select id="wl-dir">
+                  <option value="below">below</option>
+                  <option value="above">above</option>
+                </select>
+              </div>
+              <div class="pf-q">
+                <label for="wl-value">This figure</label>
+                <div class="pf-help">Just the number — no currency symbol or percent sign.</div>
+                <input id="wl-value" inputmode="decimal" placeholder="3000">
+              </div>
+              <div class="pf-err" id="wl-err" hidden></div>
+              <button class="btn" id="wl-add">Add to watchlist</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- DAILY EMAIL -->
+        <section class="view" id="view-daily">
+          <div class="home">
+            <div class="greet"><h2>Daily Email</h2><p>Your briefing, built and sent while you're still asleep. It needs your Shopify store connected — there has to be fresh data each morning for there to be anything honest to say.</p></div>
+
+            <div class="conn-state" id="daily-state"><span class="conn-dot"></span><span id="daily-text">Not switched on.</span></div>
+
+            <div class="pf-q">
+              <label for="dl-email">Send it to</label>
+              <input id="dl-email" type="email" placeholder="you@yourstore.com" autocomplete="email">
+            </div>
+            <div class="pf-q">
+              <label for="dl-time">Delivery time</label>
+              <div class="pf-help">Your local time. Sent within the hour you pick.</div>
+              <input id="dl-time" type="time" value="07:00">
+            </div>
+
+            <div class="pf-err" id="dl-err" hidden></div>
+            <div class="vy-row">
+              <button class="btn" id="dl-save">Switch on daily email</button>
+              <button class="btn ghost" id="dl-off">Turn off</button>
+            </div>
+
+            <div class="note" style="margin-top:16px">Switching this on stores your store address, your email and your Shopify token on Vyrlo's server — that's the only way a 7am email can exist. The token is encrypted, and turning this off deletes all three. Everything else Vyrlo knows stays in this browser.</div>
+            <div class="note">Emailed briefings aren't saved into Briefings or Trends — those live in this browser, and the morning job runs without it. Open the app and build one to add it to your history.</div>
           </div>
         </section>
 
@@ -784,9 +919,8 @@ Deep Sleep stock: 41 units left."></textarea>
   <div class="modal" id="settings">
     <h3>Settings</h3>
     <div class="set-row"><div><label for="s-name">Your name</label><div class="desc">Used in your greeting.</div></div><input type="text" id="s-name" placeholder="Alex"></div>
-    <div class="set-row"><div><label for="s-email">Daily email briefing</label><div class="desc">Get the briefing in your inbox each morning.</div></div><span class="sw"><input type="checkbox" id="s-email"><span class="track"></span></span></div>
-    <div class="set-row"><div><label for="s-time">Delivery time</label><div class="desc">When to send it.</div></div><input type="time" id="s-time" value="08:00"></div>
-    <div class="note">Daily email needs an always-on data source (the Shopify connect, coming next) so there's fresh data each morning. Until then, generate briefings here anytime.</div>
+    <div class="set-row"><div><label>Daily email briefing</label><div class="desc">Set the address and delivery time on its own page.</div></div><button class="btn sm" id="s-daily">Open</button></div>
+    <div class="set-row"><div><label>Shopify connection</label><div class="desc">Let Vyrlo pull yesterday's orders itself.</div></div><button class="btn sm" id="s-connect">Open</button></div>
     <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn sm" id="settings-close">Done</button></div>
   </div>
 
@@ -820,7 +954,7 @@ Deep Sleep stock: 41 units left."></textarea>
   var $=function(s,r){return (r||document).querySelector(s)};
   var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
   var esc=function(s){var d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML};
-  var LS={reports:"vyrlo.reports",settings:"vyrlo.settings",profile:"vyrlo.profile",actions:"vyrlo.actions"};
+  var LS={reports:"vyrlo.reports",settings:"vyrlo.settings",profile:"vyrlo.profile",actions:"vyrlo.actions",connect:"vyrlo.connect",watch:"vyrlo.watch"};
   function load(k,f){try{return JSON.parse(localStorage.getItem(k))||f}catch(e){return f}}
   function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
   var settings=load(LS.settings,{name:"",email:false,time:"08:00"});
@@ -904,13 +1038,14 @@ Deep Sleep stock: 41 units left."></textarea>
 
   var TOOLS=[
     {live:true,action:"build",name:"Daily Briefing",desc:"Turn your numbers into a what/why/what-next briefing.",icon:'<path d="M4 19V9l8-6 8 6v10a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/>'},
-    {live:true,proOnly:true,action:"chat",name:"AI Consultant",desc:"Chat with an AI that knows your numbers and tells you what to do next.",icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
+    {live:true,action:"chat",name:"AI Consultant",desc:"Chat with an AI that knows your numbers and tells you what to do next.",icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
     {live:true,action:"compare",name:"Compare",desc:"Put two briefings side by side and see exactly what moved.",icon:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
-    {name:"Shopify Connect",desc:"Auto-pull orders daily — no manual export.",icon:'<path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/>'},
+    {live:true,action:"connect",name:"Shopify Connect",desc:"Auto-pull yesterday's orders — no manual export.",icon:'<path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/>'},
     {name:"Stripe",desc:"Bring in payments, refunds and MRR.",icon:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>'},
     {name:"Google Sheets",desc:"Sync a sheet and brief on it automatically.",icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/>'},
     {live:true,action:"trends",name:"Trends",desc:"Every metric's real history, and where it lands if the pace holds.",icon:'<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'},
-    {name:"Daily Email",desc:"Your briefing in your inbox every morning.",icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'}
+    {live:true,action:"watch",name:"Watchlist",desc:"Pin a number and every briefing reports on it.",icon:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>'},
+    {live:true,proOnly:true,action:"daily",name:"Daily Email",desc:"Your briefing in your inbox every morning.",icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'}
   ];
 
   var SAMPLE={
@@ -941,7 +1076,8 @@ Deep Sleep stock: 41 units left."></textarea>
   function showView(v){
     $$(".view").forEach(function(el){el.classList.remove("on")});
     $("#view-"+v).classList.add("on");
-    $("#page-title").textContent = v==="home"?"Dashboard":v==="upload"?"New briefing":v==="chat"?"Consultant":v==="history"?"Briefings":v==="compare"?"Compare":v==="profile"?"Your business":v==="actions"?"Action items":v==="trends"?"Trends":"Today's briefing";
+    var TITLES={home:"Dashboard",upload:"New briefing",chat:"Consultant",history:"Briefings",compare:"Compare",profile:"Your business",actions:"Action items",trends:"Trends",connect:"Shopify Connect",watch:"Watchlist",daily:"Daily Email"};
+    $("#page-title").textContent = TITLES[v] || "Today's briefing";
     $("#new-briefing").style.display = (v==="briefing")?"":"none";
     closeSidebar(); window.scrollTo(0,0);
     if(v==="home"){ renderHome(); }
@@ -950,6 +1086,9 @@ Deep Sleep stock: 41 units left."></textarea>
     if(v==="profile"){ renderProfile(); }
     if(v==="actions"){ renderActionsPage(); }
     if(v==="trends"){ renderTrendsPage(); }
+    if(v==="connect"){ renderConnect(); }
+    if(v==="watch"){ renderWatchPage(); }
+    if(v==="daily"){ renderDailyPage(); }
   }
   function renderHistory(){
     var reps=load(LS.reports,[]);
@@ -1264,7 +1403,7 @@ Deep Sleep stock: 41 units left."></textarea>
     var ms=Math.abs(Number(a.id)-Number(b.id));
     if(!isFinite(ms)||ms<=0) return null;
     var h=ms/36e5;
-    if(h<1) return Math.round(ms/6e4)+" minutes apart";
+    if(h<1){var mins=Math.max(1,Math.round(ms/6e4));return mins+" minute"+(mins===1?"":"s")+" apart";}
     if(h<48) return Math.round(h)+" hour"+(Math.round(h)===1?"":"s")+" apart";
     return Math.round(h/24)+" days apart";
   }
@@ -1337,7 +1476,7 @@ Deep Sleep stock: 41 units left."></textarea>
     var name=(settings.name||"").trim();
     $("#dash-greet").textContent=greetWord()+(name?", "+name:"")+".";
     $("#dash-sub").textContent=new Date().toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"})+" · your workspace";
-    var shBtn=$("#cta-shopify"); if(shBtn) shBtn.style.display=accessCode?"":"none";
+    syncShopifyButtons();
     var reps=load(LS.reports,[]);
     var last=reps[0];
     var healthMap={good:"Good",watch:"Watch",at_risk:"Needs attention"};
@@ -1347,14 +1486,15 @@ Deep Sleep stock: 41 units left."></textarea>
       {label:"Briefings",value:String(reps.length),sub:reps.length?"generated":"none yet"},
       {label:"Last briefing",value:last?last.label:"—",sub:last?last.date:"build your first"},
       {label:"Business health",value:lastHealth?(healthMap[lastHealth]||"—"):"—",sub:last?"latest read":"—",dot:lastHealth?healthColor[lastHealth]:null},
-      {label:"Data sources",value:"1",sub:"CSV upload"}
+      {label:"Data sources",value:connectedShop()?"2":"1",sub:connectedShop()?"CSV + Shopify":"CSV upload"}
     ].map(function(s){return '<div class="stat"><div class="s-label">'+esc(s.label)+'</div><div class="s-val">'+(s.dot?'<span class="dot" style="background:'+s.dot+'"></span>':'')+esc(s.value)+'</div><div class="s-sub">'+esc(s.sub)+'</div></div>'}).join("");
     renderOpenActions();
+    var alertBar=watchAlertBarHtml();
     if(last){
       var lb=last.briefing, lsum=(lb&&lb.summary)||{}, lh=lsum.health||"good";
-      $("#latest").innerHTML='<div class="sec-h">Latest briefing</div><div class="latest-card"><div class="lc-top"><span class="badge '+lh+'"><span class="dot"></span>'+esc(healthMap[lh]||"—")+'</span><span class="lc-date">'+esc(last.date)+'</span></div><div class="lc-head">'+esc(lsum.headline||"")+'</div><div class="lc-body">'+esc((lsum.body||"").replace(/<[^>]+>/g,""))+'</div><button class="btn sm" id="lc-open">View full briefing →</button></div>';
+      $("#latest").innerHTML=alertBar+'<div class="sec-h">Latest briefing</div><div class="latest-card"><div class="lc-top"><span class="badge '+lh+'"><span class="dot"></span>'+esc(healthMap[lh]||"—")+'</span><span class="lc-date">'+esc(last.date)+'</span></div><div class="lc-head">'+esc(lsum.headline||"")+'</div><div class="lc-body">'+esc((lsum.body||"").replace(/<[^>]+>/g,""))+'</div><button class="btn sm" id="lc-open">View full briefing →</button></div>';
       $("#lc-open").addEventListener("click",function(){ lastRaw=last.raw||""; render(last.briefing,{}); });
-    } else { $("#latest").innerHTML=""; }
+    } else { $("#latest").innerHTML=alertBar; }
     // tools
     $("#tools").innerHTML=TOOLS.map(function(t,i){
       var cls=t.live?"tool live":"tool soon";
@@ -1368,6 +1508,9 @@ Deep Sleep stock: 41 units left."></textarea>
     $$('#tools [data-action="chat"]').forEach(function(b){b.addEventListener("click",openChat)});
     $$('#tools [data-action="compare"]').forEach(function(b){b.addEventListener("click",function(){showView("compare")})});
     $$('#tools [data-action="trends"]').forEach(function(b){b.addEventListener("click",function(){showView("trends")})});
+    $$('#tools [data-action="connect"]').forEach(function(b){b.addEventListener("click",function(){showView("connect")})});
+    $$('#tools [data-action="watch"]').forEach(function(b){b.addEventListener("click",function(){showView("watch")})});
+    $$('#tools [data-action="daily"]').forEach(function(b){b.addEventListener("click",function(){showView("daily")})});
     $$("#tools [data-soon]").forEach(function(b){b.addEventListener("click",function(){toast(b.getAttribute("data-soon")+" is coming soon.")})});
     // recents
     if(!reps.length){ $("#recents").innerHTML='<div class="empty">No briefings yet — build your first one above.</div>'; }
@@ -1510,20 +1653,41 @@ Deep Sleep stock: 41 units left."></textarea>
     });
     return Object.keys(byKey).map(function(k){return byKey[k]}).filter(function(s){return s.points.length>=3}).slice(0,8);
   }
+  // Average-delta projection, with one guard that matters more than the
+  // projection itself. A restock (6 -> 46 -> 39) reads to a plain average as
+  // a strong upward trend, and the line then points up at the exact moment
+  // the real pattern turned back down — a confidently wrong number on the
+  // product whose whole promise is not being confidently wrong. So: if one
+  // step dwarfs the rest, say the series has a jump in it and draw nothing.
   function projectNext(points){
     var n=points.length; if(n<3) return null;
     var deltas=[]; for(var i=1;i<n;i++) deltas.push(points[i].n-points[i-1].n);
+    // Compare the largest step against the median of the OTHERS. Including
+    // the outlier in its own median is self-defeating: with two deltas the
+    // median is the outlier, and the guard never fires on exactly the short
+    // series it exists for.
+    var abs=deltas.map(Math.abs).slice().sort(function(a,b){return a-b});
+    var big=abs[abs.length-1];
+    var rest=abs.slice(0,abs.length-1);
+    var med=rest[Math.floor(rest.length/2)];
+    if(big>0 && (med===0 || big>4*med)) return {stepChange:true};
     var avg=deltas.reduce(function(a,b){return a+b},0)/deltas.length;
     return {next:points[n-1].n+avg, avgDelta:avg};
   }
   function fmtLikeSeries(n,points){
     var sample=points[points.length-1].raw;
-    if(/[$€£]/.test(sample)) return sample.charAt(0)+Math.round(n).toLocaleString();
+    // Keep the minus outside the currency symbol: "-$100", not "$-100".
+    if(/[$€£]/.test(sample)){
+      var r=Math.round(n);
+      return (r<0?"-":"")+sample.charAt(0)+Math.abs(r).toLocaleString();
+    }
     return String(Math.round(n));
   }
   function trendCardHtml(s){
     var pts=s.points, n=pts.length;
     var proj=projectNext(pts);
+    var stepNote = proj && proj.stepChange;
+    if(stepNote) proj=null; // nothing to draw, but say why below
     var vals=pts.map(function(p){return p.n}); if(proj) vals=vals.concat([proj.next]);
     var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
     var padVal=(hi-lo)*0.12||Math.abs(hi)*0.1||1; lo-=padVal; hi+=padVal; // breathing room top/bottom
@@ -1547,6 +1711,8 @@ Deep Sleep stock: 41 units left."></textarea>
       projDot='<circle cx="'+pc.x.toFixed(1)+'" cy="'+pc.y.toFixed(1)+'" r="5" class="spark-dot proj"><title>If the recent pace holds: ~'+esc(fmtLikeSeries(proj.next,pts))+'</title></circle>';
       var dir=proj.avgDelta>=0?"up":"down";
       projNote='<div class="tr-proj">If the recent pace holds, next briefing lands near <b>~'+esc(fmtLikeSeries(proj.next,pts))+'</b> ('+(dir==="up"?"+":"")+esc(fmtLikeSeries(proj.avgDelta,pts))+' avg per briefing). Plain arithmetic on your last '+n+' readings, not a prediction.</div>';
+    } else if(stepNote){
+      projNote='<div class="tr-proj">No projection for this one: one reading jumps far more than the others, so an average would describe the jump rather than the trend. A restock, a price change or a one-off spike does this. The real figures above are unaffected.</div>';
     }
     return '<div class="card"><div class="sec-h">'+esc(s.name)+'</div><div class="tr-count">'+n+' briefings tracked this metric</div>'
       +'<div class="spark-wrap"><svg viewBox="0 0 '+W+' '+H+'" class="spark lg '+(up?"up":"down")+'" preserveAspectRatio="none">'
@@ -1563,6 +1729,248 @@ Deep Sleep stock: 41 units left."></textarea>
       return;
     }
     el.innerHTML=series.map(trendCardHtml).join("");
+  }
+
+  /* ---------- Shopify Connect ----------
+     Credentials live in this browser, same as everything else. They are sent
+     with each pull; the server keeps no copy unless the owner switches on the
+     daily email, which cannot work any other way. */
+  var connect=load(LS.connect,null);
+  function connectedShop(){ return (connect && connect.shop && connect.token) ? connect : null; }
+  function validShopDomain(v){ return /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(String(v||"").trim()); }
+
+  function syncShopifyButtons(){
+    var b=$("#cta-shopify"); if(b) b.style.display=(connectedShop()||accessCode)?"":"none";
+    var pill=$("#conn-pill"); if(pill) pill.textContent=connectedShop()?"On":"New";
+  }
+
+  function renderConnect(){
+    var st=$("#conn-state"), tx=$("#conn-text");
+    $("#conn-shop").value=(connect&&connect.shop)||"";
+    $("#conn-token").value=(connect&&connect.token)||"";
+    if(connectedShop()){
+      st.className="conn-state on";
+      tx.textContent=(connect.name?connect.name+" — ":"")+connect.shop+" is connected. Vyrlo can pull yesterday's orders on its own.";
+    } else {
+      st.className="conn-state";
+      tx.textContent="Not connected yet. Add your store domain and a read-only token below.";
+    }
+    $("#conn-err").hidden=true;
+    syncShopifyButtons();
+  }
+
+  function connSave(){
+    var shop=$("#conn-shop").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"").toLowerCase();
+    var token=$("#conn-token").value.trim();
+    var err=$("#conn-err");
+    function fail(m){ err.textContent=m; err.hidden=false; }
+    err.hidden=true;
+    if(!validShopDomain(shop)) return fail("That should be your myshopify.com domain — for example yourstore.myshopify.com.");
+    if(!token) return fail("Paste the Admin API access token from the app you created.");
+    var btn=$("#conn-save"); btn.disabled=true; btn.textContent="Checking…";
+    fetch("/api/shopify",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({mode:"test",shop:shop,token:token,accessCode:accessCode})})
+      .then(function(r){ return r.json().then(function(j){ return r.ok?j:Promise.reject(j); }); })
+      .then(function(d){
+        connect={shop:shop,token:token,name:d.name||""};
+        save(LS.connect,connect);
+        renderConnect();
+        toast("Connected to "+(d.name||shop)+".");
+      })
+      .catch(function(e){ fail((e&&e.error)||"Couldn't reach that store."); })
+      .then(function(){ btn.disabled=false; btn.textContent="Connect store"; });
+  }
+
+  function connClear(){
+    connect=null; try{localStorage.removeItem(LS.connect)}catch(e){}
+    renderConnect(); toast("Store disconnected.");
+  }
+
+  /* ---------- Watchlist ----------
+     Pure arithmetic over briefings already saved in this browser: no model
+     call, no cost. Two jobs — tell the owner right away when a number they
+     pinned crosses the line they set, and tell the model what they are
+     watching so every briefing says where each one stands. */
+  var watch=load(LS.watch,[]);
+
+  // Every metric that has appeared as a plain figure in a saved briefing.
+  function watchMetricOptions(){
+    var reps=load(LS.reports,[]).slice(0,12), seen={}, out=[];
+    reps.forEach(function(r){
+      ((r.briefing&&r.briefing.what_changed)||[]).forEach(function(mc){
+        var pv=parseVal(mc.value); if(!pv||pv.unit==="%") return;
+        var key=normName(mc.metric); if(!key||seen[key]) return;
+        seen[key]=1; out.push({key:key,name:mc.metric});
+      });
+    });
+    return out;
+  }
+
+  // Most recent reading of a watched metric, newest briefing first.
+  function latestReading(key){
+    var reps=load(LS.reports,[]);
+    for(var i=0;i<reps.length;i++){
+      var list=(reps[i].briefing&&reps[i].briefing.what_changed)||[];
+      for(var j=0;j<list.length;j++){
+        if(normName(list[j].metric)!==key) continue;
+        var pv=parseVal(list[j].value);
+        if(pv&&pv.unit!=="%") return {n:pv.n,raw:pv.raw,label:reps[i].label,date:reps[i].date};
+      }
+    }
+    return null;
+  }
+
+  function watchBreached(w){
+    var r=latestReading(w.key);
+    if(!r) return {rule:w,reading:null,hit:false};
+    var hit = w.dir==="below" ? (r.n < w.value) : (r.n > w.value);
+    return {rule:w,reading:r,hit:hit};
+  }
+
+  function watchAlerts(){
+    return watch.map(watchBreached).filter(function(x){return x.hit}).map(function(x){
+      return x.rule.name+" is "+x.reading.raw+", "+x.rule.dir+" the "+x.rule.value+" you set ("+x.reading.label+")";
+    });
+  }
+
+  function watchAlertBarHtml(){
+    var a=watchAlerts();
+    if(!a.length) return "";
+    return '<div class="alert-bar"><h4>'+a.length+' watchlist alert'+(a.length>1?"s":"")+'</h4><ul>'
+      +a.map(function(t){return '<li>'+esc(t)+'</li>'}).join("")+'</ul></div>';
+  }
+
+  // One line per rule for the briefing prompt, with the last real reading so
+  // the model can see whether today's data actually moves it.
+  function watchLines(){
+    return watch.map(function(w){
+      var r=latestReading(w.key);
+      return w.name+": tell me where this stands; alert threshold is "+w.dir+" "+w.value
+        +(r?" (last seen "+r.raw+" on "+r.label+")":" (no reading saved yet)");
+    });
+  }
+
+  function renderWatchPage(){
+    var el=$("#watch-list"); if(!el) return;
+    if(!watch.length){
+      el.innerHTML='<div class="card"><div class="empty">Nothing on the watchlist yet. Pick a metric below and Vyrlo will track it in every briefing.</div></div>';
+    } else {
+      el.innerHTML='<div class="wl-list">'+watch.map(function(w,i){
+        var b=watchBreached(w);
+        var now = b.reading ? b.reading.raw+" · "+b.reading.label : "no reading yet";
+        var cls = b.reading ? (b.hit?"wl-item hit":"wl-item ok") : "wl-item";
+        return '<div class="'+cls+'"><div><div class="wl-name">'+esc(w.name)+'</div>'
+          +'<div class="wl-rule">alert when '+esc(w.dir)+' '+esc(String(w.value))+'</div></div>'
+          +'<div class="wl-now">'+esc(now)+'</div>'
+          +'<button class="wl-x" data-wl="'+i+'" title="Remove">✕</button></div>';
+      }).join("")+'</div>';
+      $$("#watch-list [data-wl]").forEach(function(b){
+        b.addEventListener("click",function(){
+          watch.splice(parseInt(b.getAttribute("data-wl"),10),1);
+          save(LS.watch,watch); renderWatchPage(); syncWatchPill();
+        });
+      });
+    }
+    var sel=$("#wl-metric"), opts=watchMetricOptions();
+    sel.innerHTML=opts.length
+      ? opts.map(function(o){return '<option value="'+esc(o.key)+'">'+esc(o.name)+'</option>'}).join("")
+      : '<option value="">Build a briefing first</option>';
+    $("#wl-err").hidden=true;
+    syncWatchPill();
+  }
+
+  function syncWatchPill(){
+    var pill=$("#watch-pill"); if(!pill) return;
+    var n=watchAlerts().length;
+    pill.textContent=n?String(n):(watch.length?"On":"New");
+    pill.className=n?"ready-pill warn":"ready-pill";
+  }
+
+  function watchAdd(){
+    var sel=$("#wl-metric"), err=$("#wl-err");
+    function fail(m){ err.textContent=m; err.hidden=false; }
+    err.hidden=true;
+    var key=sel.value;
+    if(!key) return fail("There are no metrics to watch yet — build a briefing first.");
+    var val=parseFloat(String($("#wl-value").value).replace(/[^0-9.\-]/g,""));
+    if(!isFinite(val)) return fail("Put in the figure to compare against, digits only.");
+    if(watch.some(function(w){return w.key===key})) return fail("That metric is already on the watchlist.");
+    var name=(watchMetricOptions().find(function(o){return o.key===key})||{}).name||key;
+    watch.push({key:key,name:name,dir:$("#wl-dir").value,value:val});
+    save(LS.watch,watch);
+    $("#wl-value").value="";
+    renderWatchPage();
+    toast("Watching "+name+".");
+  }
+
+  /* ---------- Daily email ----------
+     The one feature that needs server-side state: a briefing that lands at
+     7am has to be built while the browser is closed. Requires a connected
+     store and a paid code. */
+  function renderDailyPage(){
+    var st=$("#daily-state"), tx=$("#daily-text");
+    st.className="conn-state"; tx.textContent="Checking…";
+    $("#dl-err").hidden=true;
+    $("#dl-email").value=(settings.emailAddress||"");
+    if(!accessCode){
+      st.className="conn-state"; tx.textContent="The daily email is part of a paid plan. Enter your access code to switch it on.";
+      return;
+    }
+    fetch("/api/daily",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({action:"get",accessCode:accessCode})})
+      .then(function(r){ return r.json().then(function(j){ return r.ok?j:Promise.reject(j); }); })
+      .then(function(d){
+        var sub=d.subscription;
+        if(!sub){ st.className="conn-state"; tx.textContent="Not switched on."; return; }
+        $("#dl-email").value=sub.email||"";
+        if(sub.localTime) $("#dl-time").value=sub.localTime;
+        if(sub.lastError){
+          st.className="conn-state err";
+          tx.textContent="On, but the last send failed: "+sub.lastError;
+        } else {
+          st.className="conn-state on";
+          tx.textContent="On — "+sub.email+" gets a briefing on "+sub.shop+" each morning"
+            +(sub.localTime?" around "+sub.localTime:"")+(sub.lastSent?". Last sent "+sub.lastSent+".":".");
+        }
+      })
+      .catch(function(e){ st.className="conn-state err"; tx.textContent=(e&&e.error)||"Couldn't check that."; });
+  }
+
+  function dailySave(){
+    var err=$("#dl-err");
+    function fail(m){ err.textContent=m; err.hidden=false; }
+    err.hidden=true;
+    if(!accessCode){ showGate(); return; }
+    var c=connectedShop();
+    if(!c) return fail("Connect your Shopify store first — the morning email needs fresh data to brief on.");
+    var email=$("#dl-email").value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("That doesn't look like a valid email address.");
+    var t=String($("#dl-time").value||"07:00");
+    var localHour=parseInt(t.split(":")[0],10)||0;
+    // The server stores UTC. Converting here, with this browser's current
+    // offset, keeps a timezone database out of the codebase — at the cost of
+    // drifting an hour when the clocks change until it's saved again.
+    var offsetH=-new Date().getTimezoneOffset()/60;
+    var hourUtc=((Math.round(localHour-offsetH))%24+24)%24;
+    var btn=$("#dl-save"); btn.disabled=true; btn.textContent="Switching on…";
+    fetch("/api/daily",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({action:"save",accessCode:accessCode,email:email,shop:c.shop,token:c.token,
+        hourUtc:hourUtc,localTime:t,profile:profile})})
+      .then(function(r){ return r.json().then(function(j){ return r.ok?j:Promise.reject(j); }); })
+      .then(function(){
+        settings.emailAddress=email; save(LS.settings,settings);
+        renderDailyPage(); toast("Daily email switched on.");
+      })
+      .catch(function(e){ fail((e&&e.error)||"Couldn't switch that on."); })
+      .then(function(){ btn.disabled=false; btn.textContent="Switch on daily email"; });
+  }
+
+  function dailyOff(){
+    if(!accessCode){ showGate(); return; }
+    fetch("/api/daily",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({action:"delete",accessCode:accessCode})})
+      .then(function(){ renderDailyPage(); toast("Daily email turned off."); })
+      .catch(function(){ toast("Couldn't turn that off."); });
   }
 
   function flagFieldsHtml(fields){
@@ -1710,7 +2118,7 @@ Deep Sleep stock: 41 units left."></textarea>
     if(!raw&&!pendingImage){$("#paste").focus();$("#paste").style.borderColor="var(--bad)";setTimeout(function(){$("#paste").style.borderColor=""},1200);return}
     settings.name=$("#name").value.trim()||settings.name;save(LS.settings,settings);
     lastRaw=raw;var period=$("#period").value.trim();var started=Date.now();startAnalyze();
-    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rawText:raw,image:pendingImage,period:period,name:settings.name,profile:profile,openActions:openActions().map(function(a){return a.title}),accessCode:accessCode})})
+    fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rawText:raw,image:pendingImage,period:period,name:settings.name,profile:profile,openActions:openActions().map(function(a){return a.title}),watchlist:watchLines(),accessCode:accessCode})})
       .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j&&j.error)||"unreachable");return j})})
       .then(function(b){if(b.error)throw new Error(b.error);if(!accessCode)markFreeUsed();var w=Math.max(0,2200-(Date.now()-started));setTimeout(function(){finishAnalyze(function(){saveReport(b,period);render(b,{})})},w)})
       .catch(function(err){
@@ -1723,9 +2131,12 @@ Deep Sleep stock: 41 units left."></textarea>
       });
   }
   function pullShopify(){
-    if(!accessCode){ showGate(); return; }
+    var c=connectedShop();
+    if(!c && !accessCode){ showView("connect"); toast("Connect your store first."); return; }
     var started=Date.now(); startAnalyze();
-    fetch("/api/shopify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({accessCode:accessCode})})
+    fetch("/api/shopify",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({accessCode:accessCode,shop:c?c.shop:"",token:c?c.token:"",
+        profile:profile,openActions:openActions().map(function(a){return a.title}),watchlist:watchLines()})})
       .then(function(r){ return r.json().then(function(j){ return r.ok?j:Promise.reject(j); }); })
       .then(function(d){ if(d.error) throw new Error(d.error); lastRaw=d.rawText||""; var w=Math.max(0,2200-(Date.now()-started)); setTimeout(function(){ finishAnalyze(function(){ saveReport(d.briefing,"Shopify"); render(d.briefing,{}); }); },w); })
       .catch(function(err){ finishAnalyze(function(){ toast((err&&err.error)||"Shopify pull failed."); }); });
@@ -1843,8 +2254,8 @@ Deep Sleep stock: 41 units left."></textarea>
   /* ---------- sidebar / settings / toast ---------- */
   function openSidebar(){$("#sidebar").classList.add("on");$("#scrim").classList.add("on")}
   function closeSidebar(){$("#sidebar").classList.remove("on");if(!$("#settings").classList.contains("on"))$("#scrim").classList.remove("on")}
-  function openSettings(){$("#s-name").value=settings.name||"";$("#s-email").checked=!!settings.email;$("#s-time").value=settings.time||"08:00";$("#settings").classList.add("on");$("#scrim").classList.add("on")}
-  function closeSettings(){settings.name=$("#s-name").value.trim();settings.email=$("#s-email").checked;settings.time=$("#s-time").value;save(LS.settings,settings);$("#settings").classList.remove("on");$("#scrim").classList.remove("on");if($("#view-home").classList.contains("on"))renderHome()}
+  function openSettings(){$("#s-name").value=settings.name||"";$("#settings").classList.add("on");$("#scrim").classList.add("on")}
+  function closeSettings(){settings.name=$("#s-name").value.trim();save(LS.settings,settings);$("#settings").classList.remove("on");$("#scrim").classList.remove("on");if($("#view-home").classList.contains("on"))renderHome()}
   var tt=null;function toast(msg){var t=$("#toast");t.textContent=msg;t.classList.add("on");clearTimeout(tt);tt=setTimeout(function(){t.classList.remove("on")},3600)}
 
   var currentBriefing=null;
@@ -1921,6 +2332,17 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#nav-profile").addEventListener("click",function(){showView("profile")});
   $("#nav-actions").addEventListener("click",function(){showView("actions")});
   $("#nav-trends").addEventListener("click",function(){showView("trends")});
+  $("#nav-connect").addEventListener("click",function(){showView("connect")});
+  $("#nav-watch").addEventListener("click",function(){showView("watch")});
+  $("#nav-daily").addEventListener("click",function(){showView("daily")});
+  $("#conn-save").addEventListener("click",connSave);
+  $("#conn-clear").addEventListener("click",connClear);
+  $("#conn-pull").addEventListener("click",pullShopify);
+  $("#wl-add").addEventListener("click",watchAdd);
+  $("#dl-save").addEventListener("click",dailySave);
+  $("#dl-off").addEventListener("click",dailyOff);
+  $("#s-daily").addEventListener("click",function(){closeSettings();showView("daily")});
+  $("#s-connect").addEventListener("click",function(){closeSettings();showView("connect")});
   $("#pf-save").addEventListener("click",saveProfile);
   $("#pf-clear").addEventListener("click",clearProfile);
   $("#up-profile-link").addEventListener("click",function(){showView("profile")});
@@ -1975,6 +2397,7 @@ Deep Sleep stock: 41 units left."></textarea>
 
   if(settings.name)$("#name").value=settings.name;
   updateProfilePill();
+  syncWatchPill();
   renderHome();
   // Load last briefing as context (for the consultant) but stay on the dashboard.
   (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; currentBriefing=last.briefing; } }catch(e){} })();

@@ -269,12 +269,22 @@ export async function onRequestPost(context) {
       ? reqBody.openActions.map((a) => String(a || "").slice(0, 200)).filter(Boolean).slice(0, 6)
       : [];
 
+    // Metrics the owner pinned on their watchlist, each already rendered as a
+    // one-line rule by the client ("Revenue: alert below 3000"). Same
+    // sanitising as openActions — it arrives from localStorage.
+    const watchlist = Array.isArray(reqBody.watchlist)
+      ? reqBody.watchlist.map((w) => String(w || "").slice(0, 160)).filter(Boolean).slice(0, 8)
+      : [];
+
     const prompt =
       (period ? `Period: ${period}\n\n` : "") +
       (image ? `The owner uploaded a screenshot of their business data.\n\n` : "") +
       (rawText ? `The owner's business data:\n"""\n${rawText}\n"""\n\n` : "") +
       (openActions.length
         ? `Still open from earlier briefings, not yet marked done by the owner:\n${openActions.map((a) => `- ${a}`).join("\n")}\nIf today's data shows movement on any of these, reference it directly. Do not repeat an open item as a new recommendation unless something material changed about it.\n\n`
+        : "") +
+      (watchlist.length
+        ? `The owner is watching these specific things and expects every briefing to say where each one stands:\n${watchlist.map((w) => `- ${w}`).join("\n")}\nFor each, say plainly whether today's data moves it, holds it, or doesn't contain it. If a watched metric isn't in the data, say that outright — a watched number you cannot see is itself worth telling them, and inventing it would be worse than admitting the gap.\n\n`
         : "") +
       `Write today's briefing as JSON matching the required schema. Follow the truthfulness rules exactly.`;
 
