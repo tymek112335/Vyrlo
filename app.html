@@ -69,6 +69,12 @@
     display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
   .sb-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.02em;padding:18px 20px;border-bottom:1px solid var(--line)}
   .logo{width:27px;height:27px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px}
+  .firstrun{max-width:520px;margin:8vh auto 0;text-align:center}
+  .firstrun h2{font-size:26px;letter-spacing:-.02em;margin-bottom:10px}
+  .firstrun p{color:var(--ink-2);font-size:15px;line-height:1.6;margin-bottom:26px}
+  .fr-alt{margin-top:16px}
+  .linkish{background:none;border:0;color:var(--ink-2);font-size:14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+  .linkish:hover{color:var(--ink)}
   .sb-nav{padding:12px;flex:1;overflow:auto}
   .sb-group{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:12px 10px 6px}
   .nav-item{width:100%;display:flex;align-items:center;gap:11px;padding:9px 10px;border:none;background:none;border-radius:10px;
@@ -526,54 +532,50 @@
     <aside class="sidebar" id="sidebar">
       <a class="sb-brand" href="#" id="sb-home">Vyrlo</a>
       <nav class="sb-nav">
-        <div class="sb-group">Tools</div>
+        <div class="sb-group">Today</div>
         <button class="nav-item active" data-nav="home">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9l8-6 8 6v10a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/></svg>
-          Daily Briefing <span class="ready-pill">Live</span>
+          Daily Briefing
         </button>
         <button class="nav-item" id="nav-consultant">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Consultant <span class="ready-pill">AI</span>
+          Consultant
         </button>
-        <button class="nav-item" id="nav-history">
+
+        <div class="sb-group nav-hist">Your history</div>
+        <button class="nav-item nav-hist" id="nav-history">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
           Briefings
         </button>
-        <button class="nav-item" id="nav-compare">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-          Compare <span class="ready-pill">New</span>
-        </button>
-        <button class="nav-item" id="nav-actions">
+        <button class="nav-item nav-hist" id="nav-actions">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           Action items
         </button>
+        <button class="nav-item nav-hist" id="nav-watch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Watchlist <span class="ready-pill" id="watch-pill" hidden></span>
+        </button>
+        <button class="nav-item nav-hist" id="nav-compare">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+          Compare
+        </button>
+        <button class="nav-item nav-hist" id="nav-trends">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg>
+          Trends
+        </button>
+
+        <div class="sb-group">Setup</div>
         <button class="nav-item" id="nav-profile">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>
           Your business <span class="ready-pill warn" id="pf-pill">Important</span>
         </button>
         <button class="nav-item" id="nav-connect">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/></svg>
-          Shopify Connect <span class="ready-pill" id="conn-pill">New</span>
-        </button>
-        <button class="nav-item soon" data-soon="Stripe connect">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>
-          Stripe <span class="soon-pill">Soon</span>
-        </button>
-        <button class="nav-item soon" data-soon="Google Sheets sync">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></svg>
-          Google Sheets <span class="soon-pill">Soon</span>
-        </button>
-        <button class="nav-item" id="nav-trends">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg>
-          Trends <span class="ready-pill">New</span>
-        </button>
-        <button class="nav-item" id="nav-watch">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-          Watchlist <span class="ready-pill" id="watch-pill">New</span>
+          Shopify Connect <span class="ready-pill" id="conn-pill" hidden></span>
         </button>
         <button class="nav-item" id="nav-daily">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-          Daily Email <span class="ready-pill" id="daily-pill">New</span>
+          Daily Email
         </button>
       </nav>
       <div class="sb-foot">
@@ -611,6 +613,13 @@
           <div class="home">
             <div class="greet"><h2 id="dash-greet">Welcome back.</h2><p id="dash-sub">Here's your workspace.</p></div>
 
+            <div class="firstrun" id="firstrun" hidden>
+              <h2>Start with yesterday's numbers.</h2>
+              <p>Any export you already have — a CSV, a spreadsheet, even a screenshot of your dashboard.</p>
+              <button class="btn primary lg" id="fr-build">Build my first briefing →</button>
+              <div class="fr-alt"><button class="linkish" id="fr-sample">or look at a sample first</button></div>
+            </div>
+
             <div class="stats" id="stats"></div>
 
             <div class="hero-cta">
@@ -641,14 +650,12 @@
           <div class="welcome">
             <button class="back" id="up-back">← Dashboard</button>
             <h2>Build a briefing</h2>
-            <p class="lede">Add your business data — upload a file or paste your numbers.</p>
             <div class="drop" id="drop">
               <div class="di">📄</div>
               <h3>Drop your data here</h3>
-              <p>CSV, Excel export, or a screenshot of your dashboard — you can also paste a screenshot with ⌘V</p>
+              <p>CSV, Excel, or a screenshot — ⌘V works too</p>
               <div class="file" id="filename"></div>
               <img id="shot-preview" alt="Screenshot preview" hidden>
-              <div class="fmt"><span>✓ CSV</span><span>✓ Excel</span><span>✓ Sheets export</span><span>✓ Screenshot</span></div>
             </div>
             <input type="file" id="fileinput" accept=".csv,.tsv,.txt,.xls,.xlsx,image/png,image/jpeg,image/gif,image/webp" hidden>
             <div class="or">— or paste your numbers —</div>
@@ -687,7 +694,7 @@ Deep Sleep stock: 41 units left."></textarea>
 
         <section class="view" id="view-history">
           <div class="home">
-            <div class="greet"><h2>Briefings</h2><p id="hist-sub">Every briefing you've generated.</p></div>
+            <div class="greet"><h2>Briefings</h2><p id="hist-sub"></p></div>
             <div class="recents" id="history-list"></div>
           </div>
         </section>
@@ -1032,15 +1039,14 @@ Deep Sleep stock: 41 units left."></textarea>
 
   var TOOLS=[
     {live:true,action:"build",name:"Daily Briefing",desc:"Turn your numbers into a what/why/what-next briefing.",icon:'<path d="M4 19V9l8-6 8 6v10a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/>'},
-    {live:true,action:"chat",name:"AI Consultant",desc:"Chat with an AI that knows your numbers and tells you what to do next.",icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
-    {live:true,action:"compare",name:"Compare",desc:"Put two briefings side by side and see exactly what moved.",icon:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
+    {live:true,action:"chat",name:"AI Consultant",desc:"Chat with an AI that knows your numbers.",icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
     {live:true,action:"connect",name:"Shopify Connect",desc:"Auto-pull yesterday's orders — no manual export.",icon:'<path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/>'},
-    {name:"Stripe",desc:"Bring in payments, refunds and MRR.",icon:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>'},
-    {name:"Google Sheets",desc:"Sync a sheet and brief on it automatically.",icon:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/>'},
-    {live:true,action:"trends",name:"Trends",desc:"Every metric's real history, and where it lands if the pace holds.",icon:'<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'},
-    {live:true,action:"watch",name:"Watchlist",desc:"Pin a number and every briefing reports on it.",icon:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>'},
-    {live:true,proOnly:true,action:"daily",name:"Daily Email",desc:"Your briefing in your inbox every morning.",icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'}
+    {live:true,action:"daily",name:"Daily Email",desc:"Your briefing in your inbox every morning.",icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'},
+    {live:true,action:"watch",name:"Watchlist",desc:"Pin a number and hear about it every day.",icon:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>'},
+    {live:true,action:"compare",name:"Compare",desc:"Put two briefings side by side.",icon:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
+    {live:true,action:"trends",name:"Trends",desc:"Every metric's real history over time.",icon:'<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'}
   ];
+
 
   var SAMPLE={
     summary:{headline:"Yesterday was a strong day.",body:"Revenue came in at <b>$4,210</b>, up 14% on the prior day, driven mostly by the Deep Sleep bundle and returning customers. Order volume and average order value both rose. One thing to keep an eye on: Deep Sleep stock is getting low relative to how fast it's selling.",health:"good",reading_time:"1 minute"},
@@ -1466,6 +1472,25 @@ Deep Sleep stock: 41 units left."></textarea>
 
   function greetWord(){var h=new Date().getHours();return h<12?"Good morning":h<18?"Good afternoon":"Good evening";}
 
+  // Everything on the dashboard describes briefings that exist. With none,
+  // it's four empty tiles and a grid of doors that don't open yet — which is
+  // what a first-time visitor was landing on. Until briefing one, show the
+  // one thing there is to do, and let the rest appear once it has content.
+  function firstRunUI(isFirst){
+    $("#firstrun").hidden=!isFirst;
+    ["#stats",".hero-cta","#open-actions","#latest","#recents"].forEach(function(sel){
+      var el=document.querySelector(sel); if(el) el.style.display=isFirst?"none":"";
+    });
+    $$("#view-home .sec-h").forEach(function(el){ el.style.display=isFirst?"none":""; });
+    var tools=$("#tools"); if(tools) tools.style.display=isFirst?"none":"";
+    $$(".nav-hist").forEach(function(el){ el.style.display=isFirst?"none":""; });
+    $("#dash-greet").style.display=isFirst?"none":"";
+    $("#dash-sub").style.display=isFirst?"none":"";
+    // The profile nudge is real, but it's advice about output that doesn't
+    // exist yet — it only competes with the one action on a first visit.
+    var pf=$("#pf-pill"); if(pf) pf.hidden=isFirst||!!profile;
+  }
+
   function renderHome(){
     var name=(settings.name||"").trim();
     $("#dash-greet").textContent=greetWord()+(name?", "+name:"")+".";
@@ -1473,6 +1498,8 @@ Deep Sleep stock: 41 units left."></textarea>
     syncShopifyButtons();
     var reps=load(LS.reports,[]);
     var last=reps[0];
+    firstRunUI(!reps.length);
+    if(!reps.length) return;
     var healthMap={good:"Good",watch:"Watch",at_risk:"Needs attention"};
     var healthColor={good:"var(--good)",watch:"var(--warn)",at_risk:"var(--bad)"};
     var lastHealth=(last&&last.briefing&&last.briefing.summary)?last.briefing.summary.health:null;
@@ -1491,10 +1518,7 @@ Deep Sleep stock: 41 units left."></textarea>
     } else { $("#latest").innerHTML=alertBar; }
     // tools
     $("#tools").innerHTML=TOOLS.map(function(t,i){
-      var cls=t.live?"tool live":"tool soon";
-      var proLocked=t.live&&t.proOnly&&!accessCode;
-      return '<button class="'+cls+'" '+(t.live?'data-action="'+t.action+'"':'data-soon="'+esc(t.name)+'"')+'>'
-        +'<span class="st'+(proLocked?" pro":"")+'">'+(t.live?(proLocked?"Pro":"Live"):"Soon")+'</span>'
+      return '<button class="tool live" data-action="'+t.action+'">'
         +'<span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+t.icon+'</svg></span>'
         +'<h4>'+esc(t.name)+'</h4><p>'+esc(t.desc)+'</p></button>';
     }).join("");
@@ -2336,7 +2360,11 @@ Deep Sleep stock: 41 units left."></textarea>
 
   /* ---------- wire ---------- */
   var chatMsgs=[];
-  function openChat(){ if(!accessCode){ showGate(); return; } showView("chat"); renderChat(); var i=$("#chat-in"); if(i) i.focus(); }
+  // Free users get the consultant too — the server caps them per IP and says
+  // so plainly when they hit it. Popping the paywall here instead meant the
+  // clearest demonstration of the product was invisible to everyone who
+  // hadn't already paid for it.
+  function openChat(){ showView("chat"); renderChat(); var i=$("#chat-in"); if(i) i.focus(); }
   function renderChat(){
     var el=$("#chat-msgs"); if(!el) return;
     el.innerHTML = chatMsgs.length ? chatMsgs.map(function(m){return '<div class="msg '+(m.role==="user"?"user":"ai")+'">'+esc(m.content)+'</div>'}).join("") : '<div class="empty">Ask your first question. The consultant reads your latest briefing.</div>';
@@ -2354,6 +2382,8 @@ Deep Sleep stock: 41 units left."></textarea>
   }
 
   $("#cta-build").addEventListener("click",goBuild);
+  $("#fr-build").addEventListener("click",goBuild);
+  $("#fr-sample").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});
   $("#cta-shopify").addEventListener("click",pullShopify);
   $("#nav-consultant").addEventListener("click",openChat);
   $("#nav-history").addEventListener("click",function(){showView("history")});
@@ -2430,9 +2460,12 @@ Deep Sleep stock: 41 units left."></textarea>
   renderHome();
   // Load last briefing as context (for the consultant) but stay on the dashboard.
   (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; currentBriefing=last.briefing; } }catch(e){} })();
-  // Show the trial/access gate on entry for anyone who hasn't unlocked.
   checkPaidSession();
-  if(!accessCode) showGate();
+  // The gate used to open on arrival, so the first screen after "no sign-up
+  // to try" was an access-code box and a subscribe button. It now waits until
+  // the free briefing is actually spent — generate() and pullShopify() call
+  // showGate() themselves at that point.
+  if(!accessCode && freeUsed()) showGate();
   // Returning from Shopify's approval screen — pick up the store token before
   // anything else needs it. Harmless no-op on a normal page load.
   finishConnect();
