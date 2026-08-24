@@ -7,20 +7,20 @@
 <title>Vyrlo — your business, explained every morning</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta name="theme-color" content="#0E8C82">
+<meta name="theme-color" content="#F5F1E8">
 <style>
   :root{
     --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    --bg:#FAFAF8; --surface:#FFFFFF; --surface-2:#FBFBF9;
-    --line:#EDECE8; --line-2:#E2E1DC;
-    --ink:#1B1C22; --ink-2:#5A5F6B; --ink-3:#9AA0AC;
-    --accent:#0E8C82; --accent-2:#12A79A; --accent-weak:#E2F3F0; --accent-ink:#fff;
-    --good:#0E9C68; --good-weak:#E6F5EE;
-    --warn:#C2791B; --warn-weak:#FBF0DD;
-    --bad:#D5405B; --bad-weak:#FBE9EC;
-    --shadow-sm:0 1px 2px rgba(20,22,34,.05);
-    --shadow:0 10px 34px -14px rgba(20,22,34,.18),0 2px 6px rgba(20,22,34,.05);
-    --shadow-lg:0 30px 70px -26px rgba(20,22,34,.30),0 6px 16px rgba(20,22,34,.07);
+    --bg:#F5F1E8; --surface:#FFFDF8; --surface-2:#FAF7EF;
+    --line:#E7E1D4; --line-2:#DAD3C3;
+    --ink:#1F1C17; --ink-2:#5F5849; --ink-3:#8E8878;
+    --accent:#137F73; --accent-2:#1A9A8C; --accent-weak:#E1EFEA; --accent-ink:#fff;
+    --good:#2E7D5B; --good-weak:#E4EFE6;
+    --warn:#B0741F; --warn-weak:#F7EDD9;
+    --bad:#B3492F; --bad-weak:#F6E5DE;
+    --shadow-sm:0 1px 2px rgba(60,48,28,.05);
+    --shadow:0 10px 34px -14px rgba(60,48,28,.16),0 2px 6px rgba(60,48,28,.05);
+    --shadow-lg:0 30px 70px -26px rgba(60,48,28,.26),0 6px 16px rgba(60,48,28,.07);
     --r:18px; --maxw:1120px;
     --sp-1:8px;--sp-2:16px;--sp-3:24px;--sp-4:40px;--sp-5:64px;--sp-6:96px;
   }
@@ -44,8 +44,8 @@
     letter-spacing:-.01em;min-height:44px;transition:background .15s,border-color .15s,transform .06s,box-shadow .15s}
   .btn:hover{background:var(--surface-2)}
   .btn:active{transform:translateY(1px)}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 1px 2px rgba(14,140,130,.4)}
-  .btn.primary:hover{background:#0C7A72;box-shadow:0 10px 24px -8px rgba(14,140,130,.55)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 1px 2px rgba(19,127,115,.35)}
+  .btn.primary:hover{background:#0F6C62;box-shadow:0 10px 24px -8px rgba(19,127,115,.45)}
   .btn.ghost{background:transparent;border-color:transparent;color:var(--ink-2)}
   .btn.ghost:hover{background:var(--surface);color:var(--ink)}
   .btn.lg{padding:14px 24px;font-size:16px;border-radius:14px}
@@ -53,7 +53,7 @@
   .btn.block{width:100%}
 
   /* nav */
-  .nav{position:sticky;top:0;z-index:100;background:rgba(250,250,248,.82);backdrop-filter:saturate(1.3) blur(12px);border-bottom:1px solid var(--line)}
+  .nav{position:sticky;top:0;z-index:100;background:rgba(245,241,232,.86);backdrop-filter:saturate(1.3) blur(12px);border-bottom:1px solid var(--line)}
   .nav .inner{max-width:var(--maxw);margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
   .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:-.02em}
   .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;display:grid;place-items:center;font-weight:800;font-size:16px}
@@ -69,7 +69,7 @@
   /* hero */
   .hero{padding:72px 0 40px;text-align:center;position:relative;overflow:hidden}
   .hero:before{content:"";position:absolute;top:-160px;left:50%;transform:translateX(-50%);width:760px;height:420px;
-    background:radial-gradient(closest-side,rgba(18,167,154,.16),rgba(18,167,154,0));z-index:0}
+    background:radial-gradient(closest-side,rgba(26,154,140,.13),rgba(26,154,140,0));z-index:0}
   .hero .wrap{position:relative;z-index:1}
   .pill{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:560;color:var(--ink-2);
     background:var(--surface);border:1px solid var(--line-2);padding:6px 8px 6px 6px;border-radius:24px;box-shadow:var(--shadow-sm);margin-bottom:24px}
@@ -90,7 +90,7 @@
   .greet-s{color:var(--ink-3);font-size:12.5px;margin-bottom:20px}
   .hero-card{border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:14px}
   .hero-card .head{font-size:19px;font-weight:660;letter-spacing:-.02em;margin-bottom:9px}
-  .hero-card .body{font-size:14.5px;color:#333846;line-height:1.6;margin-bottom:16px}
+  .hero-card .body{font-size:14.5px;color:#3A342A;line-height:1.6;margin-bottom:16px}
   .hero-card .body b{color:var(--ink);font-weight:640}
   .badge{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:620;padding:5px 11px;border-radius:20px}
   .badge .dot{width:8px;height:8px;border-radius:50%}
@@ -104,7 +104,7 @@
   .mcard .ex{font-size:12.5px;color:var(--ink-2);margin-top:9px;line-height:1.45}
   .flag{border-radius:13px;padding:13px 15px;margin-top:11px;font-size:12.5px;line-height:1.5}
   .flag .fl{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;opacity:.75;margin-bottom:4px}
-  .flag.risk{background:var(--warn-weak);color:#5b4416} .flag.opp{background:var(--good-weak);color:#0f4d34}
+  .flag.risk{background:var(--warn-weak);color:#5A431A} .flag.opp{background:var(--good-weak);color:#1E4A36}
 
   /* logos / trust */
   .trust{padding:34px 0 8px;text-align:center}
@@ -128,7 +128,15 @@
   .step p{font-size:14.5px;color:var(--ink-2);line-height:1.55}
 
   /* features */
-  .feat{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:52px}
+  .anat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-sm);margin-top:44px;padding:0 28px}
+  .arow{display:grid;grid-template-columns:170px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--line);align-items:start}
+  .arow:last-child{border-bottom:0}
+  .alabel{font-size:11.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:640;color:var(--accent);padding-top:4px}
+  .arow h3{font-size:16.5px;font-weight:600;letter-spacing:-.01em;margin-bottom:5px}
+  .arow p{font-size:14.5px;color:var(--ink-2);line-height:1.62;max-width:62ch}
+  .arow .eg{display:block;margin-top:8px;font-size:13.5px;color:var(--ink-3);font-style:italic}
+  .subhead{text-align:center;margin-top:64px;font-size:15px;letter-spacing:.02em;color:var(--ink-2)}
+  .feat{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
   .fcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px;box-shadow:var(--shadow-sm);transition:transform .18s,box-shadow .18s,border-color .18s}
   .fcard:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--line-2)}
   .ficon{width:42px;height:42px;border-radius:12px;background:var(--accent-weak);color:var(--accent);display:grid;place-items:center;margin-bottom:16px}
@@ -170,13 +178,13 @@
   .qa .ans p{padding:0 20px 18px;font-size:14.5px;color:var(--ink-2);line-height:1.6}
 
   /* final cta */
-  .final{margin:0 24px;background:linear-gradient(135deg,#132523,#0e3d37);border-radius:28px;padding:64px 32px;text-align:center;color:#fff;position:relative;overflow:hidden}
-  .final:before{content:"";position:absolute;top:-80px;right:-40px;width:320px;height:320px;background:radial-gradient(closest-side,rgba(18,167,154,.5),transparent)}
+  .final{margin:0 24px;background:linear-gradient(135deg,#1B2622,#13403A);border-radius:28px;padding:64px 32px;text-align:center;color:#fff;position:relative;overflow:hidden}
+  .final:before{content:"";position:absolute;top:-80px;right:-40px;width:320px;height:320px;background:radial-gradient(closest-side,rgba(26,154,140,.42),transparent)}
   .final h2{font-size:clamp(26px,4vw,38px);letter-spacing:-.03em;font-weight:720;position:relative;text-wrap:balance}
-  .final p{color:#bfd8d3;margin:14px auto 26px;max-width:48ch;font-size:16px;position:relative}
+  .final p{color:#C7D8D2;margin:14px auto 26px;max-width:48ch;font-size:16px;position:relative}
   .final .btn{position:relative}
-  .final .btn.primary{background:#fff;color:#132523;border-color:#fff}
-  .final .btn.primary:hover{background:#e7f4f1}
+  .final .btn.primary{background:#FFFDF8;color:#1B2622;border-color:#FFFDF8}
+  .final .btn.primary:hover{background:#EAF2EE}
 
   /* footer */
   footer{padding:52px 0 40px;border-top:1px solid var(--line);margin-top:var(--sp-6)}
@@ -198,6 +206,8 @@
   @media (max-width:900px){
     .steps,.feat,.plans{grid-template-columns:1fr}
     .fcard.wide{grid-column:auto;flex-direction:column;align-items:flex-start}
+    .arow{grid-template-columns:1fr;gap:6px}
+    .alabel{padding-top:0}
     .plan.pop{order:-1}
   }
   @media (max-width:720px){
@@ -312,35 +322,40 @@
       <div class="wrap">
         <div class="eyebrow">What you get</div>
         <h2 class="h2">A briefing, not another dashboard</h2>
-        <p class="lead">Forty charts don't tell you what to do. Vyrlo does the reading for you and hands you the decision.</p>
+        <p class="lead">Forty charts don't tell you what to do. Every briefing has the same four parts, in the same order, so you always know where to look.</p>
+
+        <div class="anat">
+          <div class="arow rv">
+            <div class="alabel">What changed</div>
+            <div><h3>The numbers that actually moved</h3><p>Revenue, orders, margin, AOV — each in one plain line, with the direction and whether it's good news. Four to six of them, not forty.</p></div>
+          </div>
+          <div class="arow rv">
+            <div class="alabel">Why it happened</div>
+            <div><h3>The cause, and how sure it is</h3><p>Drawn from your own breakdowns — product mix, new versus returning, order value. Each answer carries a confidence level, and says plainly what your data can't show.<span class="eg">"This export has no traffic or ad data, so the reason for the visit drop can't be confirmed here."</span></p></div>
+          </div>
+          <div class="arow rv">
+            <div class="alabel">Risk &amp; opportunity</div>
+            <div><h3>One of each. Not a firehose</h3><p>The single thing to watch and the single thing to chase, both tied to a figure in your data. No ten-alert inbox, no notification fatigue.</p></div>
+          </div>
+          <div class="arow rv">
+            <div class="alabel">What to do today</div>
+            <div><h3>Two or three steps, with real effort estimates</h3><p>Sized to the hours and budget you told it you have. Tick them off, and tomorrow's briefing picks up the ones still open.<span class="eg">"Reorder Deep Sleep inventory — fastest seller, ~41 units left. 10 min."</span></p></div>
+          </div>
+        </div>
+
+        <div class="subhead">And it keeps working when you're not looking</div>
         <div class="feat">
           <div class="fcard rv">
-            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h7v7"/></svg></div>
-            <h3>What changed</h3><p>The numbers that actually moved yesterday — revenue, orders, margin, AOV — each in one plain-language line.</p>
+            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/></svg></div>
+            <h3>Shopify connect</h3><p>Approve Vyrlo once on Shopify's own screen and it reads yesterday's orders and stock by itself. Read-only, revocable, no keys to copy.</p>
           </div>
           <div class="fcard rv">
-            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg></div>
-            <h3>Why it happened</h3><p>Real causes drawn from your data — with a confidence level so you know how sure it is, not just a guess.</p>
+            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
+            <h3>Daily email <span style="color:var(--accent);font-weight:700;font-size:11px;letter-spacing:.04em">PRO</span></h3><p>Pick a time. The briefing is built and sent while you sleep, so it's waiting before you've opened anything.</p>
           </div>
           <div class="fcard rv">
-            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 9v4"/><circle cx="12" cy="16.5" r=".6" fill="currentColor"/></svg></div>
-            <h3>One risk, one opportunity</h3><p>The single thing to watch and the single thing to chase. No ten-alert firehose, no notification fatigue.</p>
-          </div>
-          <div class="fcard rv">
-            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-            <h3>Concrete next actions</h3><p>Specific steps with realistic effort estimates — "reorder Deep Sleep, 10 min" — not vague "optimize your funnel" advice.</p>
-          </div>
-          <div class="fcard rv">
-            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-            <h3>Ask anything</h3><p>"Why did profit drop?" Get a straight answer pulled from your own numbers — no dashboards to dig through.</p>
-          </div>
-          <div class="fcard rv">
-            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.4-3 8-7 9-4-1-7-4.6-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
-            <h3>Daily email <span style="color:var(--accent);font-weight:700;font-size:11px;letter-spacing:.04em">PRO</span></h3><p>Connect Shopify, pick a time, and the briefing is built and sent while you sleep. Read it with coffee, act, get on with your day.</p>
-          </div>
-          <div class="fcard rv">
-            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-            <h3>AI Consultant</h3><p>Chat with an AI that reads your store's numbers and tells you what to do next, like having a sharp consultant on call. Free to try — a handful of messages a day, unlimited on Pro.</p>
+            <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></div>
+            <h3>Watchlist &amp; trends</h3><p>Pin a number and a line you don't want it to cross. Every briefing reports on it, and every metric keeps its own history as you go.</p>
           </div>
           <div class="fcard wide rv">
             <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v5"/><circle cx="12" cy="16.5" r=".7" fill="currentColor"/></svg></div>
