@@ -941,10 +941,10 @@ Deep Sleep stock: 41 units left."></textarea>
     <div class="gate-card">
       <button class="gate-x" id="gate-close" aria-label="Close">✕</button>
       <div class="gate-brand">Vyrlo</div>
-      <h2 id="gate-title">Unlimited access</h2>
-      <p id="gate-sub">Enter your access code for unlimited briefings, or take one free.</p>
+      <h2 id="gate-title">Unlimited briefings</h2>
+      <p id="gate-sub">Every feature is free. Pro lifts the one-a-week limit.</p>
       <div id="gate-free">
-        <button class="btn primary" id="gate-try">Try 1 free briefing →</button>
+        <button class="btn primary" id="gate-try">Take this week's free briefing →</button>
         <div class="gate-or">— or enter a code —</div>
       </div>
       <div class="gate-code">
@@ -1041,12 +1041,21 @@ Deep Sleep stock: 41 units left."></textarea>
   applyTheme((function(){try{return localStorage.getItem("vyrlo.theme")}catch(e){return null}})()||"light");
   var lastRaw="", pendingFileText="", pendingImage=null;
   var accessCode=(function(){try{return localStorage.getItem("vyrlo.access")||""}catch(e){return ""}})();
-  // "One free briefing a day" (as promised on the pricing page) — the flag
-  // stores today's date, not just a used/unused bit, so it clears itself
-  // tomorrow instead of gating the free tier forever after one use.
-  function todayKey(){return new Date().toDateString();}
-  function freeUsed(){try{return localStorage.getItem("vyrlo.freeUsed")===todayKey()}catch(e){return false}}
-  function markFreeUsed(){try{localStorage.setItem("vyrlo.freeUsed",todayKey())}catch(e){}}
+  // Free is one briefing a WEEK, not a day. Every feature is open — the thing
+  // Pro buys is frequency, because frequency is the only part that costs
+  // anything to serve. A daily free briefing left Pro with nothing to sell.
+  // The flag stores the week stamp rather than a used/unused bit, so it
+  // clears itself instead of gating the free tier forever after one use.
+  function weekKey(){
+    var d=new Date();
+    // Monday-based week stamp; the exact boundary matters less than that it
+    // moves once every seven days rather than every midnight.
+    var day=(d.getDay()+6)%7;
+    d.setHours(0,0,0,0); d.setDate(d.getDate()-day);
+    return "w"+d.toISOString().slice(0,10);
+  }
+  function freeUsed(){try{return localStorage.getItem("vyrlo.freeUsed")===weekKey()}catch(e){return false}}
+  function markFreeUsed(){try{localStorage.setItem("vyrlo.freeUsed",weekKey())}catch(e){}}
 
 
 
@@ -2232,7 +2241,10 @@ Deep Sleep stock: 41 units left."></textarea>
     reps.unshift({id:Date.now(),label:label,date:new Date().toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}),briefing:b,raw:lastRaw});
     // Matches the pricing page: 7-day history free, unlimited (up to 30 kept
     // locally either way) on a paid access code.
-    if(!accessCode){ var cutoff=Date.now()-7*24*3600*1000; reps=reps.filter(function(r){return r.id>=cutoff}); }
+    // History is no longer a paid feature. At one briefing a week, a 7-day
+    // window deleted the previous one exactly as the next arrived, so Trends
+    // (needs 3) and Compare (needs 2) could never fill on the free plan —
+    // which made "every feature is free" untrue in the only way that matters.
     save(LS.reports,reps.slice(0,30));
   }
 
@@ -2347,8 +2359,8 @@ Deep Sleep stock: 41 units left."></textarea>
   function showGate(){
     var used=freeUsed();
     $("#gate-free").style.display=used?"none":"";
-    $("#gate-title").textContent=used?"You've used today's free briefing":"Unlimited access";
-    $("#gate-sub").textContent=used?"Come back tomorrow for another free one, or enter your access code for unlimited briefings now.":"Enter your access code for unlimited briefings, or take one free.";
+    $("#gate-title").textContent=used?"That's this week's free briefing":"Unlimited briefings";
+    $("#gate-sub").textContent=used?"Another free one on Monday. Pro is unlimited, plus the briefing emailed to you every morning.":"Every feature is free. Pro lifts the one-a-week limit and emails you a briefing each morning.";
     $("#gate-err").textContent="";$("#gate-input").value="";
     $("#gate").classList.add("on");
   }
