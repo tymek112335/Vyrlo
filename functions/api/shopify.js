@@ -42,7 +42,7 @@ export async function onRequestPost(context) {
       try {
         token = await resolveToken(shop, body);
       } catch (e) {
-        return json({ error: "Shopify rejected those app credentials. Check the Client ID and Client secret, and that the app is installed on this store.", detail: String(e).slice(0, 200) }, 400);
+        return json({ error: "Shopify wouldn't accept this store connection. Reconnect from Shopify Connect.", detail: String(e).slice(0, 200) }, 400);
       }
     }
 
@@ -50,7 +50,7 @@ export async function onRequestPost(context) {
       // No usable credentials — fall back to the owner's env-configured
       // store, and only for the owner.
       if (!isOwner) {
-        return json({ error: "Connect your Shopify store first — add your store domain and app credentials under Shopify Connect." }, 400);
+        return json({ error: "Connect your Shopify store first, under Shopify Connect." }, 400);
       }
       shop = normalizeShop(env.SHOPIFY_SHOP);
       token = String(env.SHOPIFY_TOKEN || "").trim() || null;
@@ -77,7 +77,7 @@ export async function onRequestPost(context) {
         // sent the owner back to re-copy a key that was already correct.
         if (/401|403/.test(msg)) {
           return json({
-            error: "Shopify issued a token but wouldn't return store data. The app is missing read_orders and read_products, or it isn't installed on this store.",
+            error: "Shopify refused to return store data. Vyrlo's access was probably removed on the store — reconnect from Shopify Connect.",
             detail: msg.slice(0, 300)
           }, 400);
         }

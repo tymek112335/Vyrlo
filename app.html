@@ -703,39 +703,20 @@ Deep Sleep stock: 41 units left."></textarea>
             <div class="conn-state" id="conn-state"><span class="conn-dot"></span><span id="conn-text">Not connected yet.</span></div>
 
             <div class="pf-read">
-              <h3>Create a read-only app</h3>
-              <p>Vyrlo only ever reads. It can't change prices, edit products or touch orders, and you can revoke its access in Shopify at any time.</p>
-              <ol class="vy-steps">
-                <li>In Shopify admin, go to <b>Settings → Apps and sales channels → Develop apps</b>, then <b>Build apps using Dev Dashboard</b>.</li>
-                <li><b>Create app</b>, name it "Vyrlo".</li>
-                <li>Under scopes, tick exactly two: <b>read_orders</b> and <b>read_products</b>. Nothing else.</li>
-                <li><b>Install</b> it on your store — the credentials below don't work until it's installed.</li>
-                <li>Open <b>API key</b> / <b>Client credentials</b> and copy the <b>Client ID</b> and <b>Client secret</b>.</li>
-              </ol>
-              <p class="note">Shopify retired permanent <code>shpat_</code> tokens on 1 January 2026. Apps now hand out a client ID and secret, and Vyrlo exchanges them for a token that expires every 24 hours — so there's no long-lived key sitting anywhere. If you have an older custom app that still has a working <code>shpat_</code> token, paste it in the Client secret box on its own and leave Client ID empty.</p>
+              <h3>Read-only, and revocable</h3>
+              <p>Vyrlo asks Shopify for two permissions and nothing else: <b>read_orders</b> and <b>read_products</b>. It can't change prices, edit products or touch orders. You'll see exactly what it's asking for on Shopify's own approval screen, and you can remove it from your store at any time.</p>
+              <p class="note">No keys to copy. Type your store domain, approve on Shopify, done — the connection comes back to this browser and stays here.</p>
             </div>
 
             <div class="pf-q">
               <label for="conn-shop">Your store domain</label>
-              <div class="pf-help">The myshopify.com one, not your custom domain.</div>
+              <div class="pf-help">The myshopify.com one, not your custom domain. Find it in Shopify admin under Settings → Domains.</div>
               <input id="conn-shop" placeholder="yourstore.myshopify.com" autocomplete="off" spellcheck="false">
-            </div>
-
-            <div class="pf-q">
-              <label for="conn-id">Client ID</label>
-              <div class="pf-help">From your app's API key section. Leave empty if you're pasting an old shpat_ token below.</div>
-              <input id="conn-id" placeholder="29d8ee6d00edb7df214a4bb..." autocomplete="off" spellcheck="false">
-            </div>
-
-            <div class="pf-q">
-              <label for="conn-token">Client secret</label>
-              <div class="pf-help">Stored in this browser only. It's sent with each pull and nothing else keeps a copy — unless you switch on the daily email, which needs it to run while you're asleep.</div>
-              <input id="conn-token" type="password" placeholder="Client secret, or an old shpat_ token" autocomplete="off" spellcheck="false">
             </div>
 
             <div class="pf-err" id="conn-err" hidden></div>
             <div class="vy-row">
-              <button class="btn" id="conn-save">Connect store</button>
+              <button class="btn" id="conn-save">Connect with Shopify</button>
               <button class="btn ghost" id="conn-pull">Build a briefing now</button>
               <button class="btn ghost" id="conn-clear">Disconnect</button>
             </div>
@@ -1747,17 +1728,12 @@ Deep Sleep stock: 41 units left."></textarea>
   // A connection is usable with either credential style: post-2026 apps give
   // a client id + secret, pre-2026 ones a permanent shpat_ token.
   function connectedShop(){
-    if(!connect||!connect.shop) return null;
-    if(connect.clientId&&connect.clientSecret) return connect;
-    if(connect.token) return connect;
-    return null;
+    return (connect && connect.shop && connect.token) ? connect : null;
   }
   // What /api/shopify and /api/daily need to reach the store.
   function connCreds(){
-    var c=connectedShop(); if(!c) return {};
-    return c.clientId&&c.clientSecret
-      ? {shop:c.shop,clientId:c.clientId,clientSecret:c.clientSecret}
-      : {shop:c.shop,token:c.token};
+    var c=connectedShop();
+    return c ? {shop:c.shop,token:c.token} : {};
   }
   function validShopDomain(v){ return /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(String(v||"").trim()); }
 
@@ -1769,48 +1745,49 @@ Deep Sleep stock: 41 units left."></textarea>
   function renderConnect(){
     var st=$("#conn-state"), tx=$("#conn-text");
     $("#conn-shop").value=(connect&&connect.shop)||"";
-    $("#conn-id").value=(connect&&connect.clientId)||"";
-    $("#conn-token").value=(connect&&(connect.clientSecret||connect.token))||"";
     if(connectedShop()){
       st.className="conn-state on";
       tx.textContent=(connect.name?connect.name+" — ":"")+connect.shop+" is connected. Vyrlo can pull yesterday's orders on its own.";
     } else {
       st.className="conn-state";
-      tx.textContent="Not connected yet. Add your store domain and your app's client credentials below.";
+      tx.textContent="Not connected yet. Enter your store domain and approve Vyrlo on Shopify.";
     }
     $("#conn-err").hidden=true;
     syncShopifyButtons();
   }
 
+  // Connecting is a redirect, not a fetch: the merchant approves the two
+  // scopes on Shopify's own screen and comes back with ?connected=<claim>.
   function connSave(){
     var shop=$("#conn-shop").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"").toLowerCase();
-    var clientId=$("#conn-id").value.trim();
-    var secret=$("#conn-token").value.trim();
     var err=$("#conn-err");
-    function fail(m){ err.textContent=m; err.hidden=false; }
     err.hidden=true;
-    if(!validShopDomain(shop)) return fail("That should be your myshopify.com domain — for example yourstore.myshopify.com.");
-    if(!secret) return fail("Paste your app's Client secret.");
-    // A shpat_ value in the secret box is a legacy token, not a secret — send
-    // it as one, so old custom apps keep working without a second field.
-    var legacy=/^shp(at|ca|pa|ss)_/.test(secret)||!clientId;
-    if(!legacy&&!clientId) return fail("Paste the Client ID too, from the same screen as the secret.");
-    var creds=legacy?{token:secret}:{clientId:clientId,clientSecret:secret};
-    var btn=$("#conn-save"); btn.disabled=true; btn.textContent="Checking…";
-    fetch("/api/shopify",{method:"POST",headers:{"content-type":"application/json"},
-      body:JSON.stringify(Object.assign({mode:"test",shop:shop,accessCode:accessCode},creds))})
+    if(!validShopDomain(shop)){ err.textContent="That should be your myshopify.com domain — for example yourstore.myshopify.com."; err.hidden=false; return; }
+    var btn=$("#conn-save"); btn.disabled=true; btn.textContent="Opening Shopify…";
+    window.location.href="/api/shopify/install?shop="+encodeURIComponent(shop);
+  }
+
+  // Picks up the one-time claim left by the OAuth callback, swaps it for the
+  // store token, and keeps that token in this browser like every other
+  // credential Vyrlo holds. Runs once — the claim dies on first read.
+  function finishConnect(){
+    var m=/[?&]connected=([0-9a-f]{32})/.exec(window.location.search);
+    if(!m) return;
+    var id=m[1];
+    history.replaceState({},"", "/app"); // don't leave the claim in history
+    fetch("/api/shopify/claim",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id:id})})
       .then(function(r){ return r.json().then(function(j){ return r.ok?j:Promise.reject(j); }); })
       .then(function(d){
-        connect=legacy?{shop:shop,token:secret,name:d.name||""}
-                      :{shop:shop,clientId:clientId,clientSecret:secret,name:d.name||""};
+        connect={shop:d.shop,token:d.token,name:d.name||""};
         save(LS.connect,connect);
         renderConnect();
-        toast("Connected to "+(d.name||shop)+".");
+        showView("connect");
+        toast("Connected to "+(d.name||d.shop)+".");
       })
-      // Show Shopify's own words too. The generic line alone kept sending
-      // people back to re-copy a key that was already right.
-      .catch(function(e){ fail(((e&&e.error)||"Couldn't reach that store.")+(e&&e.detail?" — Shopify said: "+e.detail:"")); })
-      .then(function(){ btn.disabled=false; btn.textContent="Connect store"; });
+      .catch(function(e){
+        showView("connect");
+        var err=$("#conn-err"); err.textContent=(e&&e.error)||"Couldn't finish connecting."; err.hidden=false;
+      });
   }
 
   function connClear(){
@@ -2436,6 +2413,9 @@ Deep Sleep stock: 41 units left."></textarea>
   // Show the trial/access gate on entry for anyone who hasn't unlocked.
   checkPaidSession();
   if(!accessCode) showGate();
+  // Returning from Shopify's approval screen — pick up the store token before
+  // anything else needs it. Harmless no-op on a normal page load.
+  finishConnect();
 })();
 </script>
 </body>
