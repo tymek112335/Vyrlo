@@ -1081,6 +1081,16 @@ Deep Sleep stock: 41 units left."></textarea>
     $("#view-"+v).classList.add("on");
     var TITLES={home:"Today",upload:"New briefing",chat:"Consultant",history:"Briefings",compare:"Compare",profile:"Your business",actions:"Action items",trends:"Trends",connect:"Shopify Connect",watch:"Watchlist",daily:"Daily Email"};
     $("#page-title").textContent = TITLES[v] || "Today's briefing";
+
+    // The active class was written into the markup on Today and never moved,
+    // so the highlight stayed put wherever you navigated. Building a briefing
+    // is part of Today rather than a place of its own, so upload and briefing
+    // keep the highlight there.
+    var NAV_FOR={home:'[data-nav="home"]',upload:'[data-nav="home"]',briefing:'[data-nav="home"]',
+      chat:"#nav-consultant",history:"#nav-history",actions:"#nav-actions",watch:"#nav-watch",
+      compare:"#nav-compare",trends:"#nav-trends",profile:"#nav-profile",connect:"#nav-connect",daily:"#nav-daily"};
+    $$(".nav-item").forEach(function(el){el.classList.remove("active")});
+    var activeSel=NAV_FOR[v]; if(activeSel){ var an=document.querySelector(activeSel); if(an) an.classList.add("active"); }
     $("#new-briefing").style.display = (v==="briefing")?"":"none";
     closeSidebar(); window.scrollTo(0,0);
     if(v==="home"){ renderHome(); }
