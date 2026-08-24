@@ -54,6 +54,8 @@
   .btn.primary:hover{background:#0C7A72}
   .btn.ghost{background:transparent;border-color:transparent;color:var(--ink-2)}
   .btn.ghost:hover{background:var(--surface);color:var(--ink)}
+  .btn.danger{background:var(--bad-weak);border-color:transparent;color:var(--bad)}
+  .btn.danger:hover{background:var(--bad);border-color:var(--bad);color:#fff}
   .btn.sm{padding:8px 12px;font-size:13px;min-height:0;border-radius:10px}
   .btn:disabled{opacity:.55;cursor:default}
   .btn.lg{padding:13px 22px;font-size:15px;border-radius:13px}
@@ -718,7 +720,7 @@ Deep Sleep stock: 41 units left."></textarea>
             <div class="vy-row">
               <button class="btn" id="conn-save">Connect with Shopify</button>
               <button class="btn ghost" id="conn-pull">Build a briefing now</button>
-              <button class="btn ghost" id="conn-clear">Disconnect</button>
+              <button class="btn danger" id="conn-clear">Disconnect</button>
             </div>
           </div>
         </section>
@@ -775,7 +777,7 @@ Deep Sleep stock: 41 units left."></textarea>
             <div class="pf-err" id="dl-err" hidden></div>
             <div class="vy-row">
               <button class="btn" id="dl-save">Switch on daily email</button>
-              <button class="btn ghost" id="dl-off">Turn off</button>
+              <button class="btn danger" id="dl-off">Turn off</button>
             </div>
 
             <div class="note" style="margin-top:16px">Switching this on stores your store address, your email and your Shopify token on Vyrlo's server — that's the only way a 7am email can exist. The token is encrypted, and turning this off deletes all three. Everything else Vyrlo knows stays in this browser.</div>
@@ -1753,6 +1755,10 @@ Deep Sleep stock: 41 units left."></textarea>
       tx.textContent="Not connected yet. Enter your store domain and approve Vyrlo on Shopify.";
     }
     $("#conn-err").hidden=true;
+    var on=!!connectedShop();
+    $("#conn-save").style.display=on?"none":"";
+    $("#conn-pull").style.display=on?"":"none";
+    $("#conn-clear").style.display=on?"":"none";
     syncShopifyButtons();
   }
 
@@ -1916,13 +1922,23 @@ Deep Sleep stock: 41 units left."></textarea>
      The one feature that needs server-side state: a briefing that lands at
      7am has to be built while the browser is closed. Requires a connected
      store and a paid code. */
+  // Show only the action that's actually available: switch on when it's off,
+  // turn off when it's on. Never both.
+  function dailyButtons(state){
+    $("#dl-save").style.display=(state==="on")?"none":"";
+    $("#dl-off").style.display=(state==="on")?"":"none";
+    if(state==="locked"){ $("#dl-save").style.display="none"; $("#dl-off").style.display="none"; }
+  }
+
   function renderDailyPage(){
     var st=$("#daily-state"), tx=$("#daily-text");
     st.className="conn-state"; tx.textContent="Checking…";
     $("#dl-err").hidden=true;
     $("#dl-email").value=(settings.emailAddress||"");
+    dailyButtons("checking");
     if(!accessCode){
       st.className="conn-state"; tx.textContent="The daily email is part of a paid plan. Enter your access code to switch it on.";
+      dailyButtons("locked");
       return;
     }
     fetch("/api/daily",{method:"POST",headers:{"content-type":"application/json"},
@@ -1930,7 +1946,8 @@ Deep Sleep stock: 41 units left."></textarea>
       .then(function(r){ return r.json().then(function(j){ return r.ok?j:Promise.reject(j); }); })
       .then(function(d){
         var sub=d.subscription;
-        if(!sub){ st.className="conn-state"; tx.textContent="Not switched on."; return; }
+        if(!sub){ st.className="conn-state"; tx.textContent="Not switched on."; dailyButtons("off"); return; }
+        dailyButtons("on");
         $("#dl-email").value=sub.email||"";
         if(sub.localTime) $("#dl-time").value=sub.localTime;
         if(sub.lastError){
@@ -1942,7 +1959,7 @@ Deep Sleep stock: 41 units left."></textarea>
             +(sub.localTime?" around "+sub.localTime:"")+(sub.lastSent?". Last sent "+sub.lastSent+".":".");
         }
       })
-      .catch(function(e){ st.className="conn-state err"; tx.textContent=(e&&e.error)||"Couldn't check that."; });
+      .catch(function(e){ st.className="conn-state err"; tx.textContent=(e&&e.error)||"Couldn't check that."; dailyButtons("off"); });
   }
 
   function dailySave(){
