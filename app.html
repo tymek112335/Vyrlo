@@ -69,6 +69,22 @@
     display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
   .sb-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.02em;padding:18px 20px;border-bottom:1px solid var(--line)}
   .logo{width:27px;height:27px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px}
+  .setup{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:6px 18px 10px;margin-bottom:22px;box-shadow:var(--shadow-sm)}
+  .setup-h{display:flex;justify-content:space-between;align-items:baseline;padding:12px 2px 10px;border-bottom:1px solid var(--line)}
+  .setup-h b{font-size:14px;font-weight:600}
+  .setup-h span{font-size:12.5px;color:var(--ink-3)}
+  .setup-row{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;border-bottom:1px solid var(--line);
+    padding:13px 2px;text-align:left;cursor:pointer;color:var(--ink)}
+  .setup-row:last-child{border-bottom:0}
+  .setup-row:hover{background:var(--surface-2)}
+  .setup-tick{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line-2);display:grid;place-items:center;
+    font-size:12px;color:#fff}
+  .setup-row.done .setup-tick{background:var(--good);border-color:var(--good)}
+  .setup-row.done{cursor:default;opacity:.6}
+  .setup-t{flex:1;display:flex;flex-direction:column;gap:2px}
+  .setup-t b{font-size:14px;font-weight:560}
+  .setup-t em{font-style:normal;font-size:12.5px;color:var(--ink-2)}
+  .setup-go{color:var(--ink-3);font-size:15px}
   .firstrun{max-width:520px;margin:8vh auto 0;text-align:center}
   .firstrun h2{font-size:26px;letter-spacing:-.02em;margin-bottom:10px}
   .firstrun p{color:var(--ink-2);font-size:15px;line-height:1.6;margin-bottom:26px}
@@ -535,7 +551,7 @@
         <div class="sb-group">Today</div>
         <button class="nav-item active" data-nav="home">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9l8-6 8 6v10a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/></svg>
-          Daily Briefing
+          Today
         </button>
         <button class="nav-item" id="nav-consultant">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -599,7 +615,7 @@
       <div class="topbar">
         <div style="display:flex;align-items:center;gap:12px">
           <button class="hamb" id="hamb" aria-label="Menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-          <h1 id="page-title">Dashboard</h1>
+          <h1 id="page-title">Today</h1>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="btn ghost sm" id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
@@ -620,28 +636,23 @@
               <div class="fr-alt"><button class="linkish" id="fr-sample">or look at a sample first</button></div>
             </div>
 
+            <div id="setup-card"></div>
+
             <div class="stats" id="stats"></div>
 
             <div class="hero-cta">
               <div class="t">
-                <h3>Build today's briefing</h3>
-                <p>Drop in your latest numbers and get what changed, why, and what to do next — in two minutes.</p>
+                <h3 id="hero-h">Build today's briefing</h3>
+                <p id="hero-p">Drop in your latest numbers and get what changed, why, and what to do next — in two minutes.</p>
               </div>
               <div class="acts">
                 <button class="btn primary lg" id="cta-build">Start →</button>
                 <button class="btn ghost lg" id="cta-shopify" style="display:none">Pull from Shopify</button>
-                <button class="btn ghost lg" id="cta-sample">See a sample</button>
               </div>
             </div>
 
             <div id="open-actions"></div>
             <div id="latest"></div>
-
-            <div class="sec-h">Tools &amp; integrations</div>
-            <div class="tools" id="tools"></div>
-
-            <div class="sec-h">Recent briefings</div>
-            <div class="recents" id="recents"></div>
           </div>
         </section>
 
@@ -1037,15 +1048,7 @@ Deep Sleep stock: 41 units left."></textarea>
   function freeUsed(){try{return localStorage.getItem("vyrlo.freeUsed")===todayKey()}catch(e){return false}}
   function markFreeUsed(){try{localStorage.setItem("vyrlo.freeUsed",todayKey())}catch(e){}}
 
-  var TOOLS=[
-    {live:true,action:"build",name:"Daily Briefing",desc:"Turn your numbers into a what/why/what-next briefing.",icon:'<path d="M4 19V9l8-6 8 6v10a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1z"/>'},
-    {live:true,action:"chat",name:"AI Consultant",desc:"Chat with an AI that knows your numbers.",icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
-    {live:true,action:"connect",name:"Shopify Connect",desc:"Auto-pull yesterday's orders — no manual export.",icon:'<path d="M6 2l3 3-1 15-4-1 2-17z"/><path d="M9 5h6l2 14-8 1"/>'},
-    {live:true,action:"daily",name:"Daily Email",desc:"Your briefing in your inbox every morning.",icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'},
-    {live:true,action:"watch",name:"Watchlist",desc:"Pin a number and hear about it every day.",icon:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>'},
-    {live:true,action:"compare",name:"Compare",desc:"Put two briefings side by side.",icon:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
-    {live:true,action:"trends",name:"Trends",desc:"Every metric's real history over time.",icon:'<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>'}
-  ];
+
 
 
   var SAMPLE={
@@ -1076,7 +1079,7 @@ Deep Sleep stock: 41 units left."></textarea>
   function showView(v){
     $$(".view").forEach(function(el){el.classList.remove("on")});
     $("#view-"+v).classList.add("on");
-    var TITLES={home:"Dashboard",upload:"New briefing",chat:"Consultant",history:"Briefings",compare:"Compare",profile:"Your business",actions:"Action items",trends:"Trends",connect:"Shopify Connect",watch:"Watchlist",daily:"Daily Email"};
+    var TITLES={home:"Today",upload:"New briefing",chat:"Consultant",history:"Briefings",compare:"Compare",profile:"Your business",actions:"Action items",trends:"Trends",connect:"Shopify Connect",watch:"Watchlist",daily:"Daily Email"};
     $("#page-title").textContent = TITLES[v] || "Today's briefing";
     $("#new-briefing").style.display = (v==="briefing")?"":"none";
     closeSidebar(); window.scrollTo(0,0);
@@ -1478,11 +1481,10 @@ Deep Sleep stock: 41 units left."></textarea>
   // one thing there is to do, and let the rest appear once it has content.
   function firstRunUI(isFirst){
     $("#firstrun").hidden=!isFirst;
-    ["#stats",".hero-cta","#open-actions","#latest","#recents"].forEach(function(sel){
+    ["#stats",".hero-cta","#open-actions","#latest","#setup-card"].forEach(function(sel){
       var el=document.querySelector(sel); if(el) el.style.display=isFirst?"none":"";
     });
     $$("#view-home .sec-h").forEach(function(el){ el.style.display=isFirst?"none":""; });
-    var tools=$("#tools"); if(tools) tools.style.display=isFirst?"none":"";
     $$(".nav-hist").forEach(function(el){ el.style.display=isFirst?"none":""; });
     $("#dash-greet").style.display=isFirst?"none":"";
     $("#dash-sub").style.display=isFirst?"none":"";
@@ -1499,48 +1501,68 @@ Deep Sleep stock: 41 units left."></textarea>
     var reps=load(LS.reports,[]);
     var last=reps[0];
     firstRunUI(!reps.length);
+    renderSetupCard();
     if(!reps.length) return;
     var healthMap={good:"Good",watch:"Watch",at_risk:"Needs attention"};
     var healthColor={good:"var(--good)",watch:"var(--warn)",at_risk:"var(--bad)"};
-    var lastHealth=(last&&last.briefing&&last.briefing.summary)?last.briefing.summary.health:null;
-    $("#stats").innerHTML=[
-      {label:"Briefings",value:String(reps.length),sub:reps.length?"generated":"none yet"},
-      {label:"Last briefing",value:last?last.label:"—",sub:last?last.date:"build your first"},
-      {label:"Business health",value:lastHealth?(healthMap[lastHealth]||"—"):"—",sub:last?"latest read":"—",dot:lastHealth?healthColor[lastHealth]:null},
-      {label:"Data sources",value:connectedShop()?"2":"1",sub:connectedShop()?"CSV + Shopify":"CSV upload"}
-    ].map(function(s){return '<div class="stat"><div class="s-label">'+esc(s.label)+'</div><div class="s-val">'+(s.dot?'<span class="dot" style="background:'+s.dot+'"></span>':'')+esc(s.value)+'</div><div class="s-sub">'+esc(s.sub)+'</div></div>'}).join("");
-    renderOpenActions();
-    var alertBar=watchAlertBarHtml();
-    if(last){
-      var lb=last.briefing, lsum=(lb&&lb.summary)||{}, lh=lsum.health||"good";
-      $("#latest").innerHTML=alertBar+'<div class="sec-h">Latest briefing</div><div class="latest-card"><div class="lc-top"><span class="badge '+lh+'"><span class="dot"></span>'+esc(healthMap[lh]||"—")+'</span><span class="lc-date">'+esc(last.date)+'</span></div><div class="lc-head">'+esc(lsum.headline||"")+'</div><div class="lc-body">'+esc((lsum.body||"").replace(/<[^>]+>/g,""))+'</div><button class="btn sm" id="lc-open">View full briefing →</button></div>';
-      $("#lc-open").addEventListener("click",function(){ lastRaw=last.raw||""; render(last.briefing,{}); });
-    } else { $("#latest").innerHTML=alertBar; }
-    // tools
-    $("#tools").innerHTML=TOOLS.map(function(t,i){
-      return '<button class="tool live" data-action="'+t.action+'">'
-        +'<span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+t.icon+'</svg></span>'
-        +'<h4>'+esc(t.name)+'</h4><p>'+esc(t.desc)+'</p></button>';
+    var lb=(last&&last.briefing)||{}, lsum=lb.summary||{}, lastHealth=lsum.health||null;
+
+    // These tiles used to count briefings generated and data sources
+    // connected — facts about Vyrlo, not about the shop. Show the owner's own
+    // headline figures from the latest briefing instead.
+    var moved=(lb.what_changed||[]).filter(function(m){return m&&m.metric&&m.value}).slice(0,3);
+    var tiles=moved.map(function(m){
+      return {label:m.metric,value:m.value,sub:m.explanation||"",dot:m.positive?"var(--good)":"var(--bad)"};
+    });
+    tiles.push({label:"Business health",value:lastHealth?(healthMap[lastHealth]||"—"):"—",
+                sub:last.label||"",dot:lastHealth?healthColor[lastHealth]:null});
+    $("#stats").innerHTML=tiles.map(function(t){
+      return '<div class="stat"><div class="s-label">'+esc(t.label)+'</div><div class="s-val">'
+        +(t.dot?'<span class="dot" style="background:'+t.dot+'"></span>':'')+esc(t.value)
+        +'</div><div class="s-sub">'+esc(t.sub)+'</div></div>';
     }).join("");
-    $$('#tools [data-action="build"]').forEach(function(b){b.addEventListener("click",goBuild)});
-    $$('#tools [data-action="chat"]').forEach(function(b){b.addEventListener("click",openChat)});
-    $$('#tools [data-action="compare"]').forEach(function(b){b.addEventListener("click",function(){showView("compare")})});
-    $$('#tools [data-action="trends"]').forEach(function(b){b.addEventListener("click",function(){showView("trends")})});
-    $$('#tools [data-action="connect"]').forEach(function(b){b.addEventListener("click",function(){showView("connect")})});
-    $$('#tools [data-action="watch"]').forEach(function(b){b.addEventListener("click",function(){showView("watch")})});
-    $$('#tools [data-action="daily"]').forEach(function(b){b.addEventListener("click",function(){showView("daily")})});
-    $$("#tools [data-soon]").forEach(function(b){b.addEventListener("click",function(){toast(b.getAttribute("data-soon")+" is coming soon.")})});
-    // recents
-    if(!reps.length){ $("#recents").innerHTML='<div class="empty">No briefings yet — build your first one above.</div>'; }
-    else {
-      $("#recents").innerHTML=reps.map(function(r){
-        return '<button class="rep" data-id="'+r.id+'"><div><div class="rl">'+esc(r.label)+'</div><div class="rd">'+esc(r.date)+'</div></div><span class="rh">View →</span></button>';
-      }).join("");
-      $$("#recents .rep").forEach(function(el){el.addEventListener("click",function(){
-        var r=load(LS.reports,[]).find(function(x){return String(x.id)===el.getAttribute("data-id")});
-        if(r){ lastRaw=r.raw||""; render(r.briefing,{}); }
-      })});
-    }
+
+    // The one primary action, worded for the state of the day.
+    var today=new Date().toLocaleDateString([], {month:"short",day:"numeric"});
+    var builtToday=!!last && String(last.date||"").indexOf(today)===0;
+    $("#hero-h").textContent = builtToday ? "Today's briefing is done." : "Build today's briefing";
+    $("#hero-p").textContent = builtToday
+      ? "Come back tomorrow, or build another if your numbers have moved."
+      : "Drop in your latest numbers and get what changed, why, and what to do next — in two minutes.";
+    $("#cta-build").textContent = builtToday ? "Build another →" : "Start →";
+
+    renderOpenActions();
+    var lh=lsum.health||"good";
+    $("#latest").innerHTML=watchAlertBarHtml()+'<div class="sec-h">Latest briefing</div><div class="latest-card"><div class="lc-top"><span class="badge '+lh+'"><span class="dot"></span>'+esc(healthMap[lh]||"—")+'</span><span class="lc-date">'+esc(last.date)+'</span></div><div class="lc-head">'+esc(lsum.headline||"")+'</div><div class="lc-body">'+esc((lsum.body||"").replace(/<[^>]+>/g,""))+'</div><button class="btn sm" id="lc-open">View full briefing →</button></div>';
+    $("#lc-open").addEventListener("click",function(){ lastRaw=last.raw||""; render(last.briefing,{}); });
+  }
+
+  /* ---------- setup checklist ----------
+     Three things that make every later briefing better, in the order they pay
+     off. It sits on the dashboard until all three are done and then goes away
+     for good. Without it, "Setup" is a nav group nobody has a reason to open. */
+  function setupSteps(){
+    return [
+      {done:!!profile, label:"Tell Vyrlo about your business", why:"Eight questions. Every recommendation is then sized to your budget and hours.", go:function(){showView("profile")}},
+      {done:!!connectedShop(), label:"Connect your Shopify store", why:"Then it reads yesterday itself — no exporting.", go:function(){showView("connect")}},
+      {done:!!(settings.emailAddress&&accessCode), label:"Turn on the daily email", why:"The briefing arrives before you have opened anything.", go:function(){showView("daily")}}
+    ];
+  }
+  function renderSetupCard(){
+    var el=$("#setup-card"); if(!el) return;
+    var steps=setupSteps(), doneN=steps.filter(function(x){return x.done}).length;
+    if(doneN===steps.length){ el.innerHTML=""; return; }
+    el.innerHTML='<div class="setup"><div class="setup-h"><b>Finish setting up</b><span>'+doneN+' of '+steps.length+'</span></div>'
+      + steps.map(function(x,i){
+          return '<button class="setup-row'+(x.done?" done":"")+'" data-i="'+i+'">'
+            +'<span class="setup-tick">'+(x.done?"✓":"")+'</span>'
+            +'<span class="setup-t"><b>'+esc(x.label)+'</b><em>'+esc(x.why)+'</em></span>'
+            +(x.done?'':'<span class="setup-go">→</span>')+'</button>';
+        }).join("")
+      +'</div>';
+    $$("#setup-card .setup-row").forEach(function(b){
+      b.addEventListener("click",function(){ var st=setupSteps()[+b.getAttribute("data-i")]; if(st&&!st.done) st.go(); });
+    });
   }
 
   /* ---------- analyzing ---------- */
@@ -2413,7 +2435,6 @@ Deep Sleep stock: 41 units left."></textarea>
   });
   $("#chat-send").addEventListener("click",chatSend);
   $("#chat-in").addEventListener("keydown",function(e){ if(e.key==="Enter") chatSend(); });
-  $("#cta-sample").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});
   $("#sample-link").addEventListener("click",function(){lastRaw="";render(SAMPLE,{preview:true})});
   $("#generate").addEventListener("click",generate);
   $("#up-back").addEventListener("click",function(){showView("home")});
