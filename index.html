@@ -146,7 +146,7 @@
   .toggle button.on{background:var(--ink);color:#fff}
   .toggle .save{font-size:11px;color:var(--good);font-weight:640;margin-left:5px}
   .toggle button.on .save{color:#8ff0c3}
-  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px;align-items:stretch}
+  .plans{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:40px;align-items:stretch;max-width:720px;margin-left:auto;margin-right:auto}
   .plan{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px 26px;display:flex;flex-direction:column;box-shadow:var(--shadow-sm)}
   .plan.pop{border-color:var(--accent);box-shadow:var(--shadow);position:relative}
   .plan.pop:before{content:"Most popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:11.5px;font-weight:640;padding:4px 12px;border-radius:16px;white-space:nowrap}
@@ -247,9 +247,9 @@
     <!-- HERO -->
     <header class="hero">
       <div class="wrap">
-        <span class="pill"><span class="tag">New</span> AI that reads your business every morning</span>
+        <span class="pill"><span class="tag">New</span> For Shopify and e-commerce owners</span>
         <h1 class="h1">Stop reading dashboards. <span class="em">Start reading briefings.</span></h1>
-        <p class="sub">Vyrlo turns your business data into a two-minute morning briefing: what changed, why it changed, one risk, one opportunity, and the few things worth doing today.</p>
+        <p class="sub">Vyrlo reads your store's numbers every morning and hands you a two-minute briefing: what changed, why it changed, one risk, one opportunity, and the few things worth doing today. Built for the owner who runs the shop alone.</p>
         <div class="cta-row">
           <a class="btn primary lg" href="/app.html">Build your first briefing →</a>
           <a class="btn lg" href="/app.html">See a sample</a>
@@ -340,7 +340,7 @@
           </div>
           <div class="fcard rv">
             <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-            <h3>AI Consultant <span style="color:var(--accent);font-weight:700;font-size:11px;letter-spacing:.04em">PRO</span></h3><p>Chat with an AI that reads your store's numbers and tells you what to do next, like having a sharp consultant on call. Included with Pro and Business.</p>
+            <h3>AI Consultant</h3><p>Chat with an AI that reads your store's numbers and tells you what to do next, like having a sharp consultant on call. Free to try — a handful of messages a day, unlimited on Pro.</p>
           </div>
           <div class="fcard wide rv">
             <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v5"/><circle cx="12" cy="16.5" r=".7" fill="currentColor"/></svg></div>
@@ -369,6 +369,7 @@
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>One briefing a day</li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>CSV & Excel upload</li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Ask-AI follow-ups</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>AI Consultant chat</li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>7-day briefing history</li>
             </ul>
           </div>
@@ -382,18 +383,7 @@
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Daily email briefing</li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Shopify connect</li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Unlimited history</li>
-            </ul>
-          </div>
-          <div class="plan rv">
-            <div class="pn">Business</div>
-            <div class="pd">For multiple stores or a small team.</div>
-            <div class="price"><span class="amt" data-mo="$59" data-yr="$47">$59</span><span class="per">/mo</span></div>
-            <button class="btn block" data-plan="business">Get Business</button>
-            <ul>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Everything in Pro</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Multiple stores</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Team access</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Priority support</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Unlimited consultant chat</li>
             </ul>
           </div>
         </div>
@@ -408,7 +398,7 @@
         <div class="faq" id="faqList">
           <div class="qa" aria-expanded="false">
             <button aria-controls="a1">Is my business data safe?<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-            <div class="ans" id="a1"><p>Your data is turned into a briefing and not stored on a server — it's processed and gone. Your past briefings live only in your own browser, on any plan: 7 days of history free, unlimited on Pro and Business. The one exception is the daily email: switching it on stores your email address and your read-only Shopify token, encrypted, because a 7am briefing has to be built while your browser is closed. Turning it off deletes both.</p></div>
+            <div class="ans" id="a1"><p>Your data is turned into a briefing and not stored on a server — it's processed and gone. Your past briefings live only in your own browser, on any plan: 7 days of history free, unlimited on Pro. The one exception is the daily email: switching it on stores your email address and your read-only Shopify token, encrypted, because a 7am briefing has to be built while your browser is closed. Turning it off deletes both.</p></div>
           </div>
           <div class="qa" aria-expanded="false">
             <button aria-controls="a2">What data can I use?<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -423,10 +413,24 @@
             <div class="ans" id="a4"><p>No. Vyrlo runs in your browser. Open the app, add your data, read your briefing.</p></div>
           </div>
           <div class="qa" aria-expanded="false">
+            <button aria-controls="a6">Why not just ask Shopify Sidekick or ChatGPT?<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+            <div class="ans" id="a6"><p>Because both of them wait to be asked. You have to remember to open them, know which question to ask, and paste the right numbers in. Vyrlo arrives on its own every morning, having already read yesterday, and tells you the thing you didn't know to ask about. It also stays honest about what it can't see — ask a general-purpose chatbot why revenue fell and it will happily invent a reason your data never contained.</p></div>
+          </div>
+          <div class="qa" aria-expanded="false">
             <button aria-controls="a5">Can I cancel anytime?<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
             <div class="ans" id="a5"><p>Yes. Paid plans are month-to-month and you can cancel whenever you like — the free plan stays free.</p></div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- WHO -->
+    <section class="blk" id="who" style="padding-top:0">
+      <div class="wrap" style="max-width:720px">
+        <div class="eyebrow">Who's behind this</div>
+        <h2 class="h2">One person, building in the open</h2>
+        <p class="sub" style="text-align:left;margin-left:0">I'm Tim. I build and run a small e-commerce store myself, and I got tired of opening analytics that showed me forty numbers and told me nothing. So I built the thing I wanted: something that reads yesterday and tells me what to do about it.</p>
+        <p class="sub" style="text-align:left;margin-left:0">Vyrlo is new, and I'd rather say that than pretend otherwise. If it gets something wrong, or you want it to do something it doesn't, write to me and you'll get me, not a support queue — <a href="mailto:hello@vyrlo.cc">hello@vyrlo.cc</a>.</p>
       </div>
     </section>
 
