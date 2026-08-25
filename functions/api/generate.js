@@ -1,4 +1,4 @@
-import { isValidCode, checkFreeLimit, profileBlock, codeInfo } from "../_lib/access.js";
+import { isValidCode, checkFreeLimit, profileBlock, codeInfo, getUsage, bumpUsage, PRO_MONTHLY } from "../_lib/access.js";
 
 // Cloudflare Pages Function — POST /api/generate
 // Two modes on one endpoint:
@@ -217,11 +217,20 @@ export async function onRequestPost(context) {
     // ---- Free-tier rate limit (server-side backstop) -----------------------
     // Covers ask/compare/briefing alike — all three call the model. A valid
     // access code skips this entirely.
-    if (!(await isValidCode(env, reqBody.accessCode))) {
+    const paidCode = (await isValidCode(env, reqBody.accessCode)) ? String(reqBody.accessCode || "").trim() : null;
+    if (!paidCode) {
       // Free is one briefing a week. Ask/compare ride the same allowance —
       // they're follow-ups on a briefing that allowance already paid for.
       if (!(await checkFreeLimit(env, request, "generate", 3, "week"))) {
-        return json({ error: "That's this week's free briefings. Enter your access code, or subscribe for unlimited." }, 429);
+        return json({ error: "That's this week's free briefings. Enter your access code, or get Pro for 300 a month." }, 429);
+      }
+    } else if (!reqBody.mode) {
+      // Paid codes have a real ceiling now. Only full briefings count against
+      // it — ask and compare are follow-ups on a briefing already paid for,
+      // and they cost a fraction of one.
+      const usage = await getUsage(env, paidCode);
+      if (usage.total >= PRO_MONTHLY) {
+        return json({ error: `You've used all ${PRO_MONTHLY} briefings this month. Email hello@vyrlo.cc and I'll top you up.` }, 429);
       }
     }
 
@@ -323,6 +332,9 @@ export async function onRequestPost(context) {
           effort: String(r.effort || "").trim().slice(0, 24)
         }));
     }
+    // Counted only once the briefing actually exists, so a failed model call
+    // doesn't cost the customer one of their 300.
+    if (paidCode) await bumpUsage(env, paidCode);
     return json(briefing, 200);
   } catch (e) {
     return json({ error: "Something broke generating the briefing.", detail: String(e) }, 500);

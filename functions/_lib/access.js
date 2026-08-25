@@ -71,6 +71,38 @@ export async function checkFreeLimit(env, request, bucket, limit, period) {
   return true;
 }
 
+// What a paid code is actually worth in a month. "Unlimited" meant no server
+// check at all, so one code could have run up an unbounded model bill.
+export const PRO_MONTHLY = 300;
+
+function monthKey(d) { return (d || new Date()).toISOString().slice(0, 7); }
+function dayKey(d) { return (d || new Date()).toISOString().slice(0, 10); }
+
+// One record per code per month: a total plus a per-day breakdown, which is
+// what the usage page needs anyway. Read-modify-write can lose a count under
+// exactly simultaneous requests; at one owner generating a briefing at a time
+// that is not worth a locking scheme.
+export async function getUsage(env, code, when) {
+  if (!env.VYRLO_KV) return { total: 0, days: {} };
+  const raw = await env.VYRLO_KV.get(`usage:${code}:${monthKey(when)}`);
+  if (!raw) return { total: 0, days: {} };
+  try {
+    const rec = JSON.parse(raw);
+    return { total: rec.total || 0, days: rec.days || {} };
+  } catch (e) { return { total: 0, days: {} }; }
+}
+
+export async function bumpUsage(env, code) {
+  if (!env.VYRLO_KV) return;
+  const key = `usage:${code}:${monthKey()}`;
+  const rec = await getUsage(env, code);
+  rec.total = (rec.total || 0) + 1;
+  const d = dayKey();
+  rec.days[d] = (rec.days[d] || 0) + 1;
+  // Kept ~13 months so the usage page can show the previous month too.
+  await env.VYRLO_KV.put(key, JSON.stringify(rec), { expirationTtl: 34000000 });
+}
+
 export async function isValidCode(env, code) {
   code = String(code || "").trim();
   if (!code) return false;

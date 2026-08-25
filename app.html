@@ -69,6 +69,19 @@
     display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
   .sb-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.02em;padding:18px 20px;border-bottom:1px solid var(--line)}
   .logo{width:27px;height:27px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px}
+  .meter{width:100%;background:none;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;
+    cursor:pointer;text-align:left;color:var(--ink)}
+  .meter:hover{background:var(--surface-2)}
+  .meter-top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:7px}
+  .meter-top #meter-label{color:var(--ink-2);font-weight:560}
+  .meter-top #meter-count{color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .meter-track{height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+  .meter-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
+  .meter-fill.low{background:var(--warn)} .meter-fill.out{background:var(--bad)}
+  .usage-bars{display:flex;align-items:flex-end;gap:4px;height:110px;margin:6px 0 10px}
+  .usage-bar{flex:1;background:var(--accent-weak);border-radius:3px 3px 0 0;min-height:3px;position:relative}
+  .usage-bar.on{background:var(--accent)}
+  .usage-x{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3)}
   .access-note{background:var(--warn-weak);color:var(--warn);border:1px solid var(--warn);border-radius:12px;
     padding:11px 15px;font-size:13.5px;font-weight:560;margin-bottom:18px}
   .access-note.soon{background:var(--bad-weak);color:var(--bad);border-color:var(--bad)}
@@ -598,6 +611,10 @@
         </button>
       </nav>
       <div class="sb-foot">
+        <button class="meter" id="meter" hidden>
+          <div class="meter-top"><span id="meter-label">Briefings</span><span id="meter-count"></span></div>
+          <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+        </button>
         <button class="nav-item" id="nav-unlock">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
           Access code
@@ -747,6 +764,14 @@ Deep Sleep stock: 41 units left."></textarea>
               <button class="btn ghost" id="conn-pull">Build a briefing now</button>
               <button class="btn danger" id="conn-clear">Disconnect</button>
             </div>
+          </div>
+        </section>
+
+        <!-- USAGE -->
+        <section class="view" id="view-usage">
+          <div class="home">
+            <div class="greet"><h2>Your usage</h2><p id="usage-sub"></p></div>
+            <div id="usage-body"></div>
           </div>
         </section>
 
@@ -946,7 +971,7 @@ Deep Sleep stock: 41 units left."></textarea>
       <button class="gate-x" id="gate-close" aria-label="Close">✕</button>
       <div class="gate-brand">Vyrlo</div>
       <h2 id="gate-title">Unlimited briefings</h2>
-      <p id="gate-sub">Every feature is free. Pro lifts the one-a-week limit.</p>
+      <p id="gate-sub">Every feature is free. Pro raises the limit to 300 a month.</p>
       <div id="gate-free">
         <button class="btn primary" id="gate-try">Use a free briefing →</button>
         <div class="gate-or">— or enter a code —</div>
@@ -1111,7 +1136,7 @@ Deep Sleep stock: 41 units left."></textarea>
   function showView(v){
     $$(".view").forEach(function(el){el.classList.remove("on")});
     $("#view-"+v).classList.add("on");
-    var TITLES={home:"Today",upload:"New briefing",chat:"Consultant",history:"Briefings",compare:"Compare",profile:"Your business",actions:"Action items",trends:"Trends",connect:"Shopify Connect",watch:"Watchlist",daily:"Daily Email"};
+    var TITLES={home:"Today",usage:"Your usage",upload:"New briefing",chat:"Consultant",history:"Briefings",compare:"Compare",profile:"Your business",actions:"Action items",trends:"Trends",connect:"Shopify Connect",watch:"Watchlist",daily:"Daily Email"};
     $("#page-title").textContent = TITLES[v] || "Today's briefing";
 
     // The active class was written into the markup on Today and never moved,
@@ -1119,13 +1144,14 @@ Deep Sleep stock: 41 units left."></textarea>
     // is part of Today rather than a place of its own, so upload and briefing
     // keep the highlight there.
     var NAV_FOR={home:'[data-nav="home"]',upload:'[data-nav="home"]',briefing:'[data-nav="home"]',
-      chat:"#nav-consultant",history:"#nav-history",actions:"#nav-actions",watch:"#nav-watch",
+      usage:"#meter",chat:"#nav-consultant",history:"#nav-history",actions:"#nav-actions",watch:"#nav-watch",
       compare:"#nav-compare",trends:"#nav-trends",profile:"#nav-profile",connect:"#nav-connect",daily:"#nav-daily"};
     $$(".nav-item").forEach(function(el){el.classList.remove("active")});
     var activeSel=NAV_FOR[v]; if(activeSel){ var an=document.querySelector(activeSel); if(an) an.classList.add("active"); }
     $("#new-briefing").style.display = (v==="briefing")?"":"none";
     closeSidebar(); window.scrollTo(0,0);
     if(v==="home"){ renderHome(); }
+    if(v==="usage"){ renderUsagePage(); }
     if(v==="history"){ renderHistory(); }
     if(v==="compare"){ renderCompare(); }
     if(v==="profile"){ renderProfile(); }
@@ -2259,6 +2285,8 @@ Deep Sleep stock: 41 units left."></textarea>
       .catch(function(err){ finishAnalyze(function(){ toast((err&&err.error)||"Shopify pull failed."); }); });
   }
   function saveReport(b,period){
+    // The month's count just changed; keep the meter honest without a reload.
+    setTimeout(function(){ accessCode?loadUsage():renderMeter(); },300);
     var reps=load(LS.reports,[]);
     var label=period?period:new Date().toLocaleDateString([], {month:"short",day:"numeric"});
     reps.unshift({id:Date.now(),label:label,date:new Date().toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}),briefing:b,raw:lastRaw});
@@ -2385,8 +2413,8 @@ Deep Sleep stock: 41 units left."></textarea>
     var left=freeLeft(), allow=freeAllowance();
     $("#gate-title").textContent=used?"That's this week's free briefings":"Unlimited briefings";
     $("#gate-sub").textContent=used
-      ? "Your allowance resets Monday. Pro is unlimited, plus a briefing emailed to you every morning."
-      : "Every feature is free. You have "+left+" of "+allow+" briefings left this week — Pro lifts the limit and emails you one each morning.";
+      ? "Your allowance resets Monday. Pro is 300 a month, plus a briefing emailed to you every morning."
+      : "Every feature is free. You have "+left+" of "+allow+" briefings left this week — Pro is 300 a month and emails you one each morning.";
     $("#gate-err").textContent="";$("#gate-input").value="";
     $("#gate").classList.add("on");
   }
@@ -2394,8 +2422,8 @@ Deep Sleep stock: 41 units left."></textarea>
   function unlockWith(code,expires){
     accessCode=code; try{localStorage.setItem("vyrlo.access",code)}catch(e){}
     try{ expires ? localStorage.setItem("vyrlo.accessExpires",expires) : localStorage.removeItem("vyrlo.accessExpires"); }catch(e){}
-    hideGate(); toast("Unlocked — unlimited briefings.");
-    renderAccessNote();
+    hideGate(); toast("Unlocked — 300 briefings a month.");
+    renderAccessNote(); loadUsage();
     if(currentBriefing && $("#view-briefing").classList.contains("on")) render(currentBriefing,{});
   }
   function verifyCode(){
@@ -2406,6 +2434,91 @@ Deep Sleep stock: 41 units left."></textarea>
       .then(function(d){ if(d&&d.ok){ unlockWith(code,d.expires); } else { $("#gate-err").textContent="That code isn't right."; } })
       .catch(function(){ $("#gate-err").textContent="Couldn't check the code — try again."; });
   }
+
+  /* ---------- usage meter ----------
+     Free users are metered in the browser — one briefing a week needs no
+     round trip. Paid codes are metered on the server, because that count is
+     also the ceiling and a number the browser can edit isn't one. */
+  var usageCache=null;
+  function renderMeter(){
+    var m=$("#meter"); if(!m) return;
+    if(!accessCode){
+      var left=freeLeft(), allow=freeAllowance();
+      m.hidden=false;
+      $("#meter-label").textContent="Free this week";
+      $("#meter-count").textContent=left+" of "+allow;
+      setFill((allow-left)/allow, left===0);
+      return;
+    }
+    if(!usageCache){ m.hidden=true; return; }
+    m.hidden=false;
+    $("#meter-label").textContent="This month";
+    $("#meter-count").textContent=usageCache.remaining+" of "+usageCache.limit;
+    setFill(usageCache.used/usageCache.limit, usageCache.remaining===0);
+  }
+  function setFill(frac,out){
+    var f=$("#meter-fill"); if(!f) return;
+    var pct=Math.max(0,Math.min(100,Math.round(frac*100)));
+    f.style.width=pct+"%";
+    f.className="meter-fill"+(out?" out":(pct>=85?" low":""));
+  }
+  function loadUsage(){
+    if(!accessCode){ usageCache=null; renderMeter(); return Promise.resolve(); }
+    return fetch("/api/usage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({accessCode:accessCode})})
+      .then(function(r){return r.json()})
+      .then(function(d){ if(d&&d.ok){ usageCache=d; renderMeter(); } })
+      .catch(function(){});
+  }
+
+  function renderUsagePage(){
+    var body=$("#usage-body");
+    if(!accessCode){
+      $("#usage-sub").textContent="You're on the free plan.";
+      var left=freeLeft(), allow=freeAllowance();
+      body.innerHTML='<div class="card"><div class="sec-h">This week</div>'
+        +'<p class="note">'+left+' of '+allow+' briefings left. Your allowance resets on Monday'
+        +(allow>1?' — the first week is three, then one a week after.':'.')+'</p>'
+        +'<p class="note">Pro is 300 briefings a month, plus one emailed to you every morning. '
+        +'<a href="mailto:hello@vyrlo.cc?subject=Vyrlo%20Pro%20-%20founding%20customer">Email me to get set up</a>.</p></div>';
+      return;
+    }
+    if(!usageCache){ body.innerHTML='<div class="empty">Checking…</div>'; loadUsage().then(renderUsagePage); return; }
+    var u=usageCache;
+    $("#usage-sub").textContent="Pro · "+u.month;
+
+    // One bar per day of this month, so a habit is visible as a shape.
+    var parts=u.month.split("-"), y=+parts[0], mo=+parts[1];
+    var daysInMonth=new Date(Date.UTC(y,mo,0)).getUTCDate();
+    var peak=1; for(var k in u.days){ if(u.days[k]>peak) peak=u.days[k]; }
+    var bars="";
+    for(var i=1;i<=daysInMonth;i++){
+      var key=u.month+"-"+String(i).padStart(2,"0");
+      var n=u.days[key]||0;
+      bars+='<div class="usage-bar'+(n?" on":"")+'" style="height:'+(n?Math.max(6,Math.round(n/peak*100)):3)+'%" title="'+key+': '+n+'"></div>';
+    }
+    var activeDays=Object.keys(u.days).length;
+    var avg=activeDays?(u.used/activeDays).toFixed(1):"0";
+
+    body.innerHTML='<div class="card"><div class="sec-h">This month</div>'
+      +'<div class="stats" style="margin-bottom:18px">'
+      +stat("Used",String(u.used),"of "+u.limit)
+      +stat("Left",String(u.remaining),u.remaining<=30?"running low":"this month")
+      +stat("Days active",String(activeDays),"you built something")
+      +stat("Per active day",avg,"average")
+      +'</div>'
+      +'<div class="usage-bars">'+bars+'</div>'
+      +'<div class="usage-x"><span>1 '+monthName(mo)+'</span><span>'+daysInMonth+' '+monthName(mo)+'</span></div>'
+      +'</div>'
+      +'<div class="card"><div class="sec-h">Need more?</div>'
+      +'<p class="note">300 a month is about ten a day — well past what most owners read. If you are genuinely running out, that is worth a conversation rather than a bigger number: email me and I will top you up while we work out what you are using them for.</p>'
+      +'<a class="btn" href="mailto:hello@vyrlo.cc?subject=Vyrlo%20-%20more%20briefings" style="text-decoration:none">Email hello@vyrlo.cc</a>'
+      +(u.lastMonthTotal?'<p class="note" style="margin-top:14px">Last month you used '+u.lastMonthTotal+'.</p>':'')
+      +'</div>';
+  }
+  function stat(label,value,sub){
+    return '<div class="stat"><div class="s-label">'+esc(label)+'</div><div class="s-val">'+esc(value)+'</div><div class="s-sub">'+esc(sub)+'</div></div>';
+  }
+  function monthName(m){ return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m-1]||""; }
 
   // An invoiced code expires on its own. Say so while there's still time to
   // renew, rather than letting someone discover it by being quietly dropped
@@ -2508,6 +2621,7 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#settings-close").addEventListener("click",closeSettings);
   $("#sb-home").addEventListener("click",function(e){e.preventDefault();showView("home")});
   $("#theme-toggle").addEventListener("click",function(){applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark")});
+  $("#meter").addEventListener("click",function(){showView("usage")});
   $("#nav-unlock").addEventListener("click",showGate);
   $("#gate-try").addEventListener("click",function(){hideGate();showView("home")});
   $("#gate-unlock").addEventListener("click",verifyCode);
@@ -2541,6 +2655,7 @@ Deep Sleep stock: 41 units left."></textarea>
   syncWatchPill();
   renderHome();
   renderAccessNote();
+  loadUsage();
   // Load last briefing as context (for the consultant) but stay on the dashboard.
   (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; currentBriefing=last.briefing; } }catch(e){} })();
   checkPaidSession();
