@@ -99,6 +99,10 @@
   }
   function fmt(iso){ if(!iso)return "—"; var d=new Date(iso); return isNaN(d)?"—":d.toLocaleDateString([], {month:"short",day:"numeric",year:"numeric"}); }
   function kpi(k,v,s){ return '<div class="kpi"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="s">'+(s||"")+'</div></div>'; }
+  // Labels only ever come from this page's own form, but they're still built
+  // into HTML — escaping costs nothing and removes the question entirely.
+  function esc(x){ return String(x==null?"":x).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 
   $("#enter").addEventListener("click",function(){
     secret=$("#secret").value;
@@ -131,13 +135,13 @@
 
     var cs=d.customers||[];
     $("#rows").innerHTML=cs.length?cs.map(function(c){
-      return '<tr><td>'+(c.label||'<span class="muted">—</span>')
+      return '<tr><td>'+(esc(c.label)||'<span class="muted">—</span>')
         +'<div class="muted" style="font-size:12px">since '+fmt(c.created)+(c.issues>1?' · '+c.issues+' codes':'')+'</div></td>'
-        +'<td class="c">'+(c.code||"—")+'</td>'
+        +'<td class="c">'+esc(c.code||"—")+'</td>'
         +'<td><span class="pill '+(c.active?"on":"off")+'">'+(c.active?"Active":"Lapsed")+'</span></td>'
         +'<td class="muted">'+fmt(c.expires)+'</td>'
         +'<td>'+(c.active?c.used+" / "+d.limit:'<span class="muted">—</span>')+'</td>'
-        +'<td style="text-align:right">'+(c.active?'<button class="danger" data-code="'+c.code+'">Revoke</button>':'')+'</td></tr>';
+        +'<td style="text-align:right">'+(c.active?'<button class="danger" data-code="'+esc(c.code)+'">Revoke</button>':'')+'</td></tr>';
     }).join(""):'<tr><td colspan="6" class="muted">No customers yet.</td></tr>';
 
     Array.prototype.forEach.call(document.querySelectorAll("#rows .danger"),function(b){
