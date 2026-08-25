@@ -18,7 +18,7 @@
 //   {mode:"test"}  → verify the credentials, return the store name
 //   default        → pull the numbers and build a briefing
 
-import { isValidCode, checkFreeLimit } from "../_lib/access.js";
+import { isValidCode } from "../_lib/access.js";
 import { normalizeShop, pullStoreNumbers, testConnection, resolveToken } from "../_lib/shopify.js";
 
 function json(obj, status) {
@@ -30,7 +30,6 @@ export async function onRequestPost(context) {
   try {
     const body = await request.json().catch(() => ({}));
     const code = String(body.accessCode || "").trim();
-    const paid = await isValidCode(env, code);
     const isOwner = !!(env.ACCESS_CODE && code === env.ACCESS_CODE);
 
     // Resolve which store to pull from. Post-2026 apps send clientId +
@@ -57,13 +56,10 @@ export async function onRequestPost(context) {
       if (!shop || !token) {
         return json({ error: "No Shopify store is connected." }, 400);
       }
-    } else if (!paid) {
-      // Anyone can connect their own store and try it, but not on repeat —
-      // each pull is a real model call. Paid codes skip the cap.
-      if (!(await checkFreeLimit(env, request, "shopify", 2))) {
-        return json({ error: "You've used today's free Shopify briefings. Enter an access code for unlimited pulls." }, 429);
-      }
     }
+    // No separate quota here on purpose: a Shopify pull produces a briefing
+    // and /api/generate counts it, so a second cap would charge the free
+    // week's allowance twice for one briefing.
 
     if (body.mode === "test") {
       try {

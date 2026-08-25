@@ -156,6 +156,11 @@
   .toggle button.on .save{color:#8ff0c3}
   .plans{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:40px;align-items:stretch;max-width:720px;margin-left:auto;margin-right:auto}
   .plan{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px 26px;display:flex;flex-direction:column;box-shadow:var(--shadow-sm)}
+  .founding{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+  .founding b{display:block;font-size:13px;font-weight:640;margin-bottom:5px}
+  .founding p{font-size:13px;color:var(--ink-2);line-height:1.55;margin:0 0 8px}
+  .founding a{font-size:13px;font-weight:600;color:var(--accent);text-decoration:none}
+  .founding a:hover{text-decoration:underline}
   .plan.pop{border-color:var(--accent);box-shadow:var(--shadow);position:relative}
   .plan.pop:before{content:"Most popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:11.5px;font-weight:640;padding:4px 12px;border-radius:16px;white-space:nowrap}
   .plan .pn{font-size:15px;font-weight:660}
@@ -351,7 +356,7 @@
           </div>
           <div class="fcard rv">
             <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
-            <h3>Daily email <span style="color:var(--accent);font-weight:700;font-size:11px;letter-spacing:.04em">PRO</span></h3><p>Pick a time. The briefing is built and sent while you sleep, so it's waiting before you've opened anything.</p>
+            <h3>Daily email <span style="color:var(--accent);font-weight:700;font-size:11px;letter-spacing:.04em">PRO</span></h3><p>Pick a time. The briefing is built and sent while you sleep, so it's waiting before you've opened anything. The one thing Pro is for.</p>
           </div>
           <div class="fcard rv">
             <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></div>
@@ -369,7 +374,8 @@
     <section class="blk" id="pricing" style="padding-top:0">
       <div class="wrap" style="text-align:center">
         <div class="eyebrow">Pricing</div>
-        <h2 class="h2">Start free. Upgrade when it earns its keep.</h2>
+        <h2 class="h2">Every feature is free. Pro is for frequency.</h2>
+        <p class="lead">Nothing is locked behind the paywall — connect your store, watch metrics, chat with the consultant, all on the free plan. Pro lifts the one-briefing-a-week limit and emails you one every morning.</p>
         <div class="toggle" role="group" aria-label="Billing period">
           <button id="mo" class="on" aria-pressed="true">Monthly</button>
           <button id="yr" aria-pressed="false">Annual<span class="save">−20%</span></button>
@@ -377,29 +383,33 @@
         <div class="plans">
           <div class="plan rv">
             <div class="pn">Free</div>
-            <div class="pd">For trying it on your own numbers.</div>
+            <div class="pd">The whole tool, once a week.</div>
             <div class="price"><span class="amt">$0</span><span class="per">/forever</span></div>
             <a class="btn block" href="/app.html">Start free</a>
             <ul>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>One briefing a day</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>CSV & Excel upload</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Ask-AI follow-ups</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>AI Consultant chat</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>7-day briefing history</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>One briefing a week</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Every feature — nothing locked</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Shopify connect</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Watchlist, Trends, Compare</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>AI Consultant</li>
             </ul>
           </div>
           <div class="plan pop rv">
             <div class="pn">Pro</div>
             <div class="pd">For owners running the business daily.</div>
             <div class="price"><span class="amt" data-mo="$29" data-yr="$23">$29</span><span class="per">/mo</span></div>
-            <button class="btn primary block" data-plan="pro">Get Pro</button>
+            <a class="btn primary block" href="mailto:hello@vyrlo.cc?subject=Vyrlo%20Pro%20-%20founding%20customer" style="text-decoration:none">Get Pro</a>
             <ul>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>300 briefings a month</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Unlimited briefings</li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Daily email briefing</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Shopify connect</li>
-              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Unlimited history</li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Unlimited consultant chat</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Everything in Free</li>
             </ul>
+            <div class="founding">
+              <b>Founding customers</b>
+              <p>Vyrlo is new, so the first 20 are set up by hand. Email me and you get an invoice, then a code — and me on the other end of any question you have about your numbers.</p>
+              <a href="mailto:hello@vyrlo.cc?subject=Vyrlo%20Pro%20-%20founding%20customer">hello@vyrlo.cc →</a>
+            </div>
           </div>
         </div>
       </div>
@@ -413,7 +423,7 @@
         <div class="faq" id="faqList">
           <div class="qa" aria-expanded="false">
             <button aria-controls="a1">Is my business data safe?<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-            <div class="ans" id="a1"><p>Your data is turned into a briefing and not stored on a server — it's processed and gone. Your past briefings live only in your own browser, on any plan: 7 days of history free, unlimited on Pro. The one exception is the daily email: switching it on stores your email address and your read-only Shopify token, encrypted, because a 7am briefing has to be built while your browser is closed. Turning it off deletes both.</p></div>
+            <div class="ans" id="a1"><p>Your data is turned into a briefing and not stored on a server — it's processed and gone. Your past briefings live only in your own browser, on every plan — history isn't something you have to pay for. The one exception is the daily email: switching it on stores your email address and your read-only Shopify token, encrypted, because a 7am briefing has to be built while your browser is closed. Turning it off deletes both.</p></div>
           </div>
           <div class="qa" aria-expanded="false">
             <button aria-controls="a2">What data can I use?<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -514,6 +524,9 @@
   var loginSoon=$("#login-soon");
   if(loginSoon) loginSoon.addEventListener("click",function(){ showToast("Customer accounts are coming soon — try it free for now."); });
 
+  // Stripe checkout isn't wired up yet, so the Pro button is a mailto and
+  // nothing carries data-plan. Left in place for when it is: the endpoint,
+  // the webhook and the code issuing all still exist.
   $$("[data-plan]").forEach(function(b){
     b.addEventListener("click",function(){
       var plan=b.getAttribute("data-plan");

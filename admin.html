@@ -1,0 +1,115 @@
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vyrlo — issue a code</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  :root{--bg:#F5F1E8;--surface:#FFFDF8;--line:#E7E1D4;--ink:#1F1C17;--ink-2:#5F5849;--accent:#5E6B3C;--bad:#B3492F}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:660px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:-.02em;margin:0 0 4px}
+  .sub{color:var(--ink-2);font-size:14px;margin:0 0 28px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+  label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+  .hint{font-size:12.5px;color:var(--ink-2);margin-bottom:7px}
+  input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font:inherit;color:inherit;margin-bottom:14px}
+  input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  button{cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#fff;padding:10px 16px;border-radius:9px;font:inherit;font-weight:560}
+  button.ghost{background:transparent;color:var(--ink-2);border-color:var(--line)}
+  button.danger{background:transparent;color:var(--bad);border-color:transparent;padding:4px 8px;font-size:13px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .out{margin-top:16px;padding:16px;border:1px dashed var(--accent);border-radius:10px;background:#fff;display:none}
+  .code{font:600 26px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;color:var(--accent)}
+  .err{color:var(--bad);font-size:13.5px;margin-top:8px;display:none}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2);padding:0 0 8px;font-weight:600}
+  td{padding:9px 0;border-top:1px solid var(--line);vertical-align:top}
+  td.c{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600}
+  .muted{color:var(--ink-2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Issue an access code</h1>
+  <p class="sub">For customers invoiced directly. The code stops working on its own when it expires — nothing to remember to switch off.</p>
+
+  <div class="card">
+    <label for="secret">Admin password</label>
+    <div class="hint">The ADMIN_SECRET you set in Cloudflare. Not saved anywhere.</div>
+    <input id="secret" type="password" autocomplete="off" spellcheck="false">
+
+    <label for="label">Who is it for</label>
+    <div class="hint">Business name or email, so you can tell codes apart later.</div>
+    <input id="label" type="text" placeholder="Aurora Home — hello@aurorahome.com" autocomplete="off">
+
+    <label for="days">Days valid</label>
+    <input id="days" type="number" value="31" min="1" max="400">
+
+    <div class="row">
+      <button id="create">Create code</button>
+      <button class="ghost" id="refresh">Show existing codes</button>
+    </div>
+    <div class="err" id="err"></div>
+
+    <div class="out" id="out">
+      <div class="muted" style="font-size:12.5px;margin-bottom:6px">Send this to the customer</div>
+      <div class="code" id="code"></div>
+      <div class="muted" id="meta" style="font-size:12.5px;margin-top:6px"></div>
+    </div>
+  </div>
+
+  <div class="card" id="listCard" style="display:none">
+    <table>
+      <thead><tr><th>Code</th><th>For</th><th>Expires</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+<script>
+  var $=function(s){return document.querySelector(s)};
+  function fail(m){var e=$("#err");e.textContent=m;e.style.display="block"}
+  function call(payload){
+    $("#err").style.display="none";
+    return fetch("/api/admin",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify(Object.assign({secret:$("#secret").value},payload))})
+      .then(function(r){return r.json().then(function(j){return r.ok?j:Promise.reject(j)})});
+  }
+  function fmt(iso){ if(!iso) return "—"; var d=new Date(iso); return isNaN(d)?"—":d.toLocaleDateString([], {year:"numeric",month:"short",day:"numeric"}); }
+
+  $("#create").addEventListener("click",function(){
+    if(!$("#secret").value) return fail("Enter the admin password.");
+    if(!$("#label").value.trim()) return fail("Add a name so you can tell codes apart.");
+    var b=$("#create"); b.disabled=true; b.textContent="Creating…";
+    call({action:"create",label:$("#label").value.trim(),days:$("#days").value})
+      .then(function(d){
+        $("#code").textContent=d.code;
+        $("#meta").textContent=d.label+" · valid until "+fmt(d.expires);
+        $("#out").style.display="block";
+        $("#label").value="";
+        loadList();
+      })
+      .catch(function(e){ fail((e&&e.error)||"Couldn't create that."); })
+      .then(function(){ b.disabled=false; b.textContent="Create code"; });
+  });
+
+  function loadList(){
+    call({action:"list"}).then(function(d){
+      $("#listCard").style.display="";
+      $("#rows").innerHTML=(d.codes||[]).map(function(c){
+        return '<tr><td class="c">'+c.code+'</td><td>'+(c.label||'<span class="muted">—</span>')
+          +'</td><td class="muted">'+fmt(c.expires)+(c.expires?'':' <span class="muted">no expiry</span>')
+          +'</td><td style="text-align:right"><button class="danger" data-code="'+c.code+'">Revoke</button></td></tr>';
+      }).join("") || '<tr><td colspan="4" class="muted">No codes yet.</td></tr>';
+      Array.prototype.forEach.call(document.querySelectorAll("#rows .danger"),function(b){
+        b.addEventListener("click",function(){
+          if(!confirm("Revoke "+b.getAttribute("data-code")+"? They lose access immediately.")) return;
+          call({action:"revoke",code:b.getAttribute("data-code")}).then(loadList).catch(function(e){fail((e&&e.error)||"Couldn't revoke.")});
+        });
+      });
+    }).catch(function(e){ fail((e&&e.error)||"Couldn't load codes."); });
+  }
+  $("#refresh").addEventListener("click",loadList);
+</script>
+</body>

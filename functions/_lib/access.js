@@ -38,20 +38,36 @@ How to use it:
 - Never treat this section as sales figures. It is background, not evidence. It cannot support a claim about what actually happened in their data.`;
 }
 
-// Server-side backstop for the free tier. The UI's "1 free briefing" is a
+// Server-side backstop for the free tier. The UI's free-briefing limit is a
 // client-side localStorage flag (no accounts/DB, by design), so it's only a
 // nicety — anyone can clear it or call the API directly. This is the real
-// ceiling: a per-IP daily cap in KV, skipped entirely for a valid access
-// code. If VYRLO_KV isn't bound yet, this fails open (no limit) rather than
-// blocking every unpaid request — same tradeoff isValidCode already makes.
-export async function checkFreeLimit(env, request, bucket, limit) {
+// ceiling: a per-IP cap in KV, skipped entirely for a valid access code. If
+// VYRLO_KV isn't bound, this fails open (no limit) rather than blocking every
+// unpaid request — same tradeoff isValidCode already makes.
+//
+// period is "day" or "week". Briefings are weekly on the free plan; the
+// cheaper endpoints (chat, outbound mail) stay daily. The cap sits a little
+// above the advertised limit on purpose: several people behind one office or
+// mobile IP shouldn't lock each other out of a plan they were promised.
+function periodStamp(period) {
+  const now = new Date();
+  if (period !== "week") return now.toISOString().slice(0, 10);
+  const d = new Date(now);
+  const day = (d.getUTCDay() + 6) % 7; // Monday-based
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - day);
+  return "w" + d.toISOString().slice(0, 10);
+}
+
+export async function checkFreeLimit(env, request, bucket, limit, period) {
   if (!env.VYRLO_KV) return true;
   const ip = request.headers.get("cf-connecting-ip") || "unknown";
-  const day = new Date().toISOString().slice(0, 10);
-  const key = `freelimit:${bucket}:${ip}:${day}`;
+  const stamp = periodStamp(period);
+  const key = `freelimit:${bucket}:${ip}:${stamp}`;
   const current = parseInt((await env.VYRLO_KV.get(key)) || "0", 10);
   if (current >= limit) return false;
-  await env.VYRLO_KV.put(key, String(current + 1), { expirationTtl: 90000 });
+  // Just past the window it counts, so a stale counter can't outlive it.
+  await env.VYRLO_KV.put(key, String(current + 1), { expirationTtl: period === "week" ? 700000 : 90000 });
   return true;
 }
 
@@ -61,6 +77,31 @@ export async function isValidCode(env, code) {
   if (env.ACCESS_CODE && code === env.ACCESS_CODE) return true;
   if (!env.VYRLO_KV) return false;
   return !!(await env.VYRLO_KV.get("code:" + code));
+}
+
+// Manually issued access, for invoiced customers. Stripe's webhook mints
+// codes that live forever because Stripe tells us when they lapse; an
+// invoiced code has nobody to report a cancellation, so it carries its own
+// expiry as a KV TTL and lets itself out.
+export async function issueManualCode(env, label, days) {
+  const d = Math.min(400, Math.max(1, parseInt(days, 10) || 31));
+  const code = crypto.randomUUID().split("-")[0].toUpperCase();
+  const expires = new Date(Date.now() + d * 864e5).toISOString();
+  const rec = { label: String(label || "").slice(0, 120), issued: new Date().toISOString(), expires, manual: true };
+  await env.VYRLO_KV.put("code:" + code, JSON.stringify(rec), { expirationTtl: d * 86400 });
+  return { code, ...rec };
+}
+
+// What a code is worth, for the app to show "expires in N days" rather than
+// letting someone find out by being silently downgraded mid-week.
+export async function codeInfo(env, code) {
+  code = String(code || "").trim();
+  if (!code) return null;
+  if (env.ACCESS_CODE && code === env.ACCESS_CODE) return { owner: true };
+  if (!env.VYRLO_KV) return null;
+  const raw = await env.VYRLO_KV.get("code:" + code);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return { legacy: true }; }
 }
 
 export async function issueCode(env, customerId) {

@@ -1,4 +1,4 @@
-import { isValidCode, checkFreeLimit, profileBlock } from "../_lib/access.js";
+import { isValidCode, checkFreeLimit, profileBlock, codeInfo } from "../_lib/access.js";
 
 // Cloudflare Pages Function — POST /api/generate
 // Two modes on one endpoint:
@@ -205,7 +205,11 @@ export async function onRequestPost(context) {
     // enforced below, server-side, via checkFreeLimit.
     if (reqBody.mode === "verify") {
       const ok = await isValidCode(env, reqBody.accessCode);
-      return json({ ok }, 200);
+      // Hand back the expiry too. An invoiced code stops working on its own,
+      // and finding that out by being silently dropped to the free plan
+      // mid-week is a bad way to learn it.
+      const info = ok ? await codeInfo(env, reqBody.accessCode) : null;
+      return json({ ok, expires: (info && info.expires) || null }, 200);
     }
 
     if (!env.ANTHROPIC_API_KEY) return json({ error: "Server is missing its API key." }, 500);
@@ -214,8 +218,10 @@ export async function onRequestPost(context) {
     // Covers ask/compare/briefing alike — all three call the model. A valid
     // access code skips this entirely.
     if (!(await isValidCode(env, reqBody.accessCode))) {
-      if (!(await checkFreeLimit(env, request, "generate", 3))) {
-        return json({ error: "Free limit reached for today. Enter your access code or subscribe for unlimited use." }, 429);
+      // Free is one briefing a week. Ask/compare ride the same allowance —
+      // they're follow-ups on a briefing that allowance already paid for.
+      if (!(await checkFreeLimit(env, request, "generate", 3, "week"))) {
+        return json({ error: "That's this week's free briefings. Enter your access code, or subscribe for unlimited." }, 429);
       }
     }
 
