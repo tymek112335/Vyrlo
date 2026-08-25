@@ -3,7 +3,7 @@
 // owner's latest briefing + data. Open to free users under a per-IP daily
 // cap; an access code lifts the cap.
 
-import { isValidCode, checkFreeLimit, profileBlock } from "../_lib/access.js";
+import { isValidCode, checkFreeLimit, profileBlock, bumpStat } from "../_lib/access.js";
 
 const CONSULTANT_SYSTEM = `You are Vyrlo's business consultant for the owner of a small e-commerce store. You talk like a sharp, blunt operator who has seen a lot of small stores: practical, numbers-first, no fluff, no corporate hedging.
 
@@ -68,6 +68,7 @@ export async function onRequestPost(context) {
     }
     const data = await resp.json();
     const textBlock = (data.content || []).find((b) => b.type === "text");
+    await bumpStat(env, "chat");
     return json({ reply: textBlock ? textBlock.text : "No reply." }, 200);
   } catch (e) {
     return json({ error: "Chat failed.", detail: String(e).slice(0, 200) }, 500);

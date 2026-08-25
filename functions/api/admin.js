@@ -8,9 +8,9 @@
 // typed into the app and kept in a browser's localStorage; the credential
 // that mints paid access shouldn't be the same one that logs in.
 //
-// Actions: create | list | revoke
+// Actions: create | list | revoke | overview
 
-import { issueManualCode } from "../_lib/access.js";
+import { issueManualCode, saveCustomer, listCustomers, getStats, getUsage, PRO_MONTHLY } from "../_lib/access.js";
 
 function json(obj, status) {
   return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
@@ -35,7 +35,46 @@ export async function onRequestPost(context) {
 
     if (body.action === "create") {
       const issued = await issueManualCode(env, body.label, body.days);
+      // The permanent half of the record, so this customer still exists in
+      // the list after the code they were given has expired.
+      await saveCustomer(env, issued.label, issued.code, issued.expires);
       return json({ ok: true, ...issued }, 200);
+    }
+
+    if (body.action === "overview") {
+      const [stats, customers] = await Promise.all([getStats(env, 30), listCustomers(env)]);
+
+      // A customer is live if the code they hold is still in KV; the code
+      // record self-deletes on expiry, so its absence is the lapse signal.
+      const live = [];
+      for (const c of customers) {
+        const active = c.code ? !!(await env.VYRLO_KV.get("code:" + c.code)) : false;
+        const usage = c.code && active ? await getUsage(env, c.code) : { total: 0 };
+        live.push({
+          id: c.id, label: c.label, code: c.code, expires: c.expires,
+          created: c.created, active, used: usage.total, issues: (c.issues || []).length
+        });
+      }
+      live.sort((a, b) => (b.active - a.active) || String(b.created || "").localeCompare(String(a.created || "")));
+
+      const sum = (f, n) => stats.slice(-n).reduce((t, d) => t + (d[f] || 0), 0);
+      return json({
+        ok: true,
+        limit: PRO_MONTHLY,
+        stats,
+        customers: live,
+        totals: {
+          activeCustomers: live.filter((c) => c.active).length,
+          lapsedCustomers: live.filter((c) => !c.active).length,
+          briefings30: sum("briefings_free", 30) + sum("briefings_paid", 30),
+          briefingsPaid30: sum("briefings_paid", 30),
+          briefings7: sum("briefings_free", 7) + sum("briefings_paid", 7),
+          views30: sum("views_site", 30),
+          appViews30: sum("views_app", 30),
+          chat30: sum("chat", 30),
+          emails30: sum("emails", 30)
+        }
+      }, 200);
     }
 
     if (body.action === "list") {

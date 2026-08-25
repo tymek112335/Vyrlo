@@ -103,6 +103,66 @@ export async function bumpUsage(env, code) {
   await env.VYRLO_KV.put(key, JSON.stringify(rec), { expirationTtl: 34000000 });
 }
 
+/* ---------- owner-facing records ----------
+   Codes expire, and their KV entry goes with them. That's right for access
+   and wrong for knowing who ever bought: a month later the customer would
+   have vanished from the list entirely. Customers are therefore kept in a
+   second, permanent record that outlives the code it points at. */
+export async function saveCustomer(env, label, code, expires) {
+  if (!env.VYRLO_KV) return null;
+  const id = String(label || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "customer";
+  const key = "cust:" + id;
+  let rec = null;
+  try { rec = JSON.parse(await env.VYRLO_KV.get(key)); } catch (e) {}
+  if (!rec) rec = { id, label, created: new Date().toISOString(), issues: [] };
+  rec.label = label;
+  rec.code = code;
+  rec.expires = expires;
+  rec.issues.push({ code, issued: new Date().toISOString(), expires });
+  rec.issues = rec.issues.slice(-24);
+  await env.VYRLO_KV.put(key, JSON.stringify(rec));
+  return rec;
+}
+
+export async function listCustomers(env) {
+  if (!env.VYRLO_KV) return [];
+  const out = [];
+  let cursor;
+  do {
+    const page = await env.VYRLO_KV.list({ prefix: "cust:", cursor });
+    cursor = page.list_complete ? null : page.cursor;
+    for (const k of page.keys) {
+      try { out.push(JSON.parse(await env.VYRLO_KV.get(k.name))); } catch (e) {}
+    }
+  } while (cursor && out.length < 300);
+  return out;
+}
+
+/* ---------- counters ----------
+   One record per day holding every number worth watching. Cheap to write,
+   and it means the owner's dashboard is reading a handful of keys rather
+   than scanning the whole namespace. */
+export async function bumpStat(env, field, n) {
+  if (!env.VYRLO_KV) return;
+  const key = "stats:" + new Date().toISOString().slice(0, 10);
+  let rec = {};
+  try { rec = JSON.parse(await env.VYRLO_KV.get(key)) || {}; } catch (e) {}
+  rec[field] = (rec[field] || 0) + (n || 1);
+  await env.VYRLO_KV.put(key, JSON.stringify(rec), { expirationTtl: 34000000 });
+}
+
+export async function getStats(env, days) {
+  if (!env.VYRLO_KV) return [];
+  const out = [];
+  for (let i = (days || 30) - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
+    let rec = {};
+    try { rec = JSON.parse(await env.VYRLO_KV.get("stats:" + d)) || {}; } catch (e) {}
+    out.push({ date: d, ...rec });
+  }
+  return out;
+}
+
 export async function isValidCode(env, code) {
   code = String(code || "").trim();
   if (!code) return false;

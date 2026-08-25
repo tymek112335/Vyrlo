@@ -1,86 +1,160 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vyrlo — issue a code</title>
+<title>Vyrlo — control</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
-  :root{--bg:#F5F1E8;--surface:#FFFDF8;--line:#E7E1D4;--ink:#1F1C17;--ink-2:#5F5849;--accent:#5E6B3C;--bad:#B3492F}
+  :root{--bg:#F5F1E8;--surface:#FFFDF8;--surface-2:#FAF7EF;--line:#E7E1D4;--ink:#1F1C17;--ink-2:#5F5849;--ink-3:#8E8878;
+        --accent:#5E6B3C;--accent-weak:#E8EBDB;--good:#2F7A57;--bad:#B3492F;--warn:#B0741F}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-  .wrap{max-width:660px;margin:0 auto;padding:40px 24px 80px}
-  h1{font-size:22px;letter-spacing:-.02em;margin:0 0 4px}
-  .sub{color:var(--ink-2);font-size:14px;margin:0 0 28px}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:36px 24px 90px}
+  h1{font-size:23px;letter-spacing:-.02em;margin:0 0 3px}
+  .sub{color:var(--ink-2);font-size:14px;margin:0 0 26px}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
-  label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
-  .hint{font-size:12.5px;color:var(--ink-2);margin-bottom:7px}
-  input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font:inherit;color:inherit;margin-bottom:14px}
+  .sec{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:640;margin-bottom:14px}
+  label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+  .hint{font-size:12.5px;color:var(--ink-2);margin-bottom:6px}
+  input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font:inherit;color:inherit;margin-bottom:13px}
   input:focus{outline:2px solid var(--accent);outline-offset:1px}
   button{cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#fff;padding:10px 16px;border-radius:9px;font:inherit;font-weight:560}
   button.ghost{background:transparent;color:var(--ink-2);border-color:var(--line)}
-  button.danger{background:transparent;color:var(--bad);border-color:transparent;padding:4px 8px;font-size:13px}
+  button.danger{background:transparent;color:var(--bad);border-color:transparent;padding:3px 7px;font-size:12.5px}
+  button:disabled{opacity:.55;cursor:default}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .out{margin-top:16px;padding:16px;border:1px dashed var(--accent);border-radius:10px;background:#fff;display:none}
-  .code{font:600 26px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;color:var(--accent)}
-  .err{color:var(--bad);font-size:13.5px;margin-top:8px;display:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .kpi{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:13px 15px}
+  .kpi .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .kpi .v{font-size:25px;font-weight:640;letter-spacing:-.02em;margin-top:3px}
+  .kpi .s{font-size:12px;color:var(--ink-2)}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:96px;margin:10px 0 6px}
+  .bar{flex:1;background:var(--accent-weak);border-radius:2px 2px 0 0;min-height:2px}
+  .bar.on{background:var(--accent)}
+  .axis{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3)}
   table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2);padding:0 0 8px;font-weight:600}
-  td{padding:9px 0;border-top:1px solid var(--line);vertical-align:top}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);padding:0 8px 9px 0;font-weight:640}
+  td{padding:10px 8px 10px 0;border-top:1px solid var(--line);vertical-align:top}
   td.c{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600}
-  .muted{color:var(--ink-2)}
+  .pill{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:20px}
+  .pill.on{background:#E2EFE7;color:var(--good)} .pill.off{background:#F6E5DE;color:var(--bad)}
+  .muted{color:var(--ink-3)}
+  .out{margin-top:15px;padding:15px;border:1px dashed var(--accent);border-radius:10px;background:#fff;display:none}
+  .code{font:640 25px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;color:var(--accent)}
+  .err{color:var(--bad);font-size:13.5px;margin-top:8px;display:none}
+  #main{display:none}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Issue an access code</h1>
-  <p class="sub">For customers invoiced directly. The code stops working on its own when it expires — nothing to remember to switch off.</p>
+  <h1>Vyrlo control</h1>
+  <p class="sub">Access codes, customers and what the site is actually doing.</p>
 
-  <div class="card">
+  <div class="card" id="lock">
     <label for="secret">Admin password</label>
-    <div class="hint">The ADMIN_SECRET you set in Cloudflare. Not saved anywhere.</div>
+    <div class="hint">Your ADMIN_SECRET. Held in this tab only, never stored.</div>
     <input id="secret" type="password" autocomplete="off" spellcheck="false">
-
-    <label for="label">Who is it for</label>
-    <div class="hint">Business name or email, so you can tell codes apart later.</div>
-    <input id="label" type="text" placeholder="Aurora Home — hello@aurorahome.com" autocomplete="off">
-
-    <label for="days">Days valid</label>
-    <input id="days" type="number" value="31" min="1" max="400">
-
-    <div class="row">
-      <button id="create">Create code</button>
-      <button class="ghost" id="refresh">Show existing codes</button>
-    </div>
-    <div class="err" id="err"></div>
-
-    <div class="out" id="out">
-      <div class="muted" style="font-size:12.5px;margin-bottom:6px">Send this to the customer</div>
-      <div class="code" id="code"></div>
-      <div class="muted" id="meta" style="font-size:12.5px;margin-top:6px"></div>
-    </div>
+    <button id="enter">Unlock</button>
+    <div class="err" id="lockErr"></div>
   </div>
 
-  <div class="card" id="listCard" style="display:none">
-    <table>
-      <thead><tr><th>Code</th><th>For</th><th>Expires</th><th></th></tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
+  <div id="main">
+    <div class="card">
+      <div class="sec">Last 30 days</div>
+      <div class="grid" id="kpis"></div>
+      <div class="bars" id="bars"></div>
+      <div class="axis"><span id="axL"></span><span>briefings per day</span><span id="axR"></span></div>
+    </div>
+
+    <div class="card">
+      <div class="sec">Customers</div>
+      <table><thead><tr><th>Who</th><th>Code</th><th>Status</th><th>Expires</th><th>Used</th><th></th></tr></thead>
+      <tbody id="rows"></tbody></table>
+    </div>
+
+    <div class="card">
+      <div class="sec">Issue a code</div>
+      <label for="label">Who is it for</label>
+      <div class="hint">Business name or email. Kept permanently, so they stay in the list after the code lapses.</div>
+      <input id="label" type="text" placeholder="Aurora Home — hello@aurorahome.com" autocomplete="off">
+      <label for="days">Days valid</label>
+      <input id="days" type="number" value="31" min="1" max="400">
+      <div class="row"><button id="create">Create code</button><button class="ghost" id="refresh">Refresh</button></div>
+      <div class="err" id="err"></div>
+      <div class="out" id="out">
+        <div class="muted" style="font-size:12.5px;margin-bottom:5px">Send this to the customer</div>
+        <div class="code" id="code"></div>
+        <div class="muted" id="meta" style="font-size:12.5px;margin-top:5px"></div>
+      </div>
+    </div>
   </div>
 </div>
 <script>
   var $=function(s){return document.querySelector(s)};
-  function fail(m){var e=$("#err");e.textContent=m;e.style.display="block"}
+  var secret="";
   function call(payload){
-    $("#err").style.display="none";
     return fetch("/api/admin",{method:"POST",headers:{"content-type":"application/json"},
-      body:JSON.stringify(Object.assign({secret:$("#secret").value},payload))})
+      body:JSON.stringify(Object.assign({secret:secret},payload))})
       .then(function(r){return r.json().then(function(j){return r.ok?j:Promise.reject(j)})});
   }
-  function fmt(iso){ if(!iso) return "—"; var d=new Date(iso); return isNaN(d)?"—":d.toLocaleDateString([], {year:"numeric",month:"short",day:"numeric"}); }
+  function fmt(iso){ if(!iso)return "—"; var d=new Date(iso); return isNaN(d)?"—":d.toLocaleDateString([], {month:"short",day:"numeric",year:"numeric"}); }
+  function kpi(k,v,s){ return '<div class="kpi"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="s">'+(s||"")+'</div></div>'; }
+
+  $("#enter").addEventListener("click",function(){
+    secret=$("#secret").value;
+    if(!secret){ $("#lockErr").textContent="Enter the password."; $("#lockErr").style.display="block"; return; }
+    var b=$("#enter"); b.disabled=true; b.textContent="Checking…";
+    call({action:"overview"})
+      .then(function(d){ $("#lock").style.display="none"; $("#main").style.display="block"; paint(d); })
+      .catch(function(e){ $("#lockErr").textContent=(e&&e.error)||"Couldn't unlock."; $("#lockErr").style.display="block"; })
+      .then(function(){ b.disabled=false; b.textContent="Unlock"; });
+  });
+  $("#secret").addEventListener("keydown",function(e){ if(e.key==="Enter") $("#enter").click(); });
+
+  function paint(d){
+    var t=d.totals||{};
+    $("#kpis").innerHTML=
+      kpi("Paying now",t.activeCustomers||0,(t.lapsedCustomers||0)+" lapsed")
+      +kpi("Briefings",t.briefings30||0,(t.briefingsPaid30||0)+" from paying")
+      +kpi("Last 7 days",t.briefings7||0,"briefings")
+      +kpi("Site visits",t.views30||0,(t.appViews30||0)+" opened the app")
+      +kpi("Consultant",t.chat30||0,"messages")
+      +kpi("Morning emails",t.emails30||0,"sent");
+
+    var st=d.stats||[];
+    var peak=1; st.forEach(function(x){ var n=(x.briefings_free||0)+(x.briefings_paid||0); if(n>peak)peak=n; });
+    $("#bars").innerHTML=st.map(function(x){
+      var n=(x.briefings_free||0)+(x.briefings_paid||0);
+      return '<div class="bar'+(n?" on":"")+'" style="height:'+(n?Math.max(5,Math.round(n/peak*100)):2)+'%" title="'+x.date+': '+n+'"></div>';
+    }).join("");
+    if(st.length){ $("#axL").textContent=fmt(st[0].date); $("#axR").textContent=fmt(st[st.length-1].date); }
+
+    var cs=d.customers||[];
+    $("#rows").innerHTML=cs.length?cs.map(function(c){
+      return '<tr><td>'+(c.label||'<span class="muted">—</span>')
+        +'<div class="muted" style="font-size:12px">since '+fmt(c.created)+(c.issues>1?' · '+c.issues+' codes':'')+'</div></td>'
+        +'<td class="c">'+(c.code||"—")+'</td>'
+        +'<td><span class="pill '+(c.active?"on":"off")+'">'+(c.active?"Active":"Lapsed")+'</span></td>'
+        +'<td class="muted">'+fmt(c.expires)+'</td>'
+        +'<td>'+(c.active?c.used+" / "+d.limit:'<span class="muted">—</span>')+'</td>'
+        +'<td style="text-align:right">'+(c.active?'<button class="danger" data-code="'+c.code+'">Revoke</button>':'')+'</td></tr>';
+    }).join(""):'<tr><td colspan="6" class="muted">No customers yet.</td></tr>';
+
+    Array.prototype.forEach.call(document.querySelectorAll("#rows .danger"),function(b){
+      b.addEventListener("click",function(){
+        if(!confirm("Revoke "+b.getAttribute("data-code")+"? They lose access immediately.")) return;
+        call({action:"revoke",code:b.getAttribute("data-code")}).then(load);
+      });
+    });
+  }
+
+  function load(){ return call({action:"overview"}).then(paint).catch(function(e){ fail((e&&e.error)||"Couldn't load."); }); }
+  function fail(m){ $("#err").textContent=m; $("#err").style.display="block"; }
+  $("#refresh").addEventListener("click",load);
 
   $("#create").addEventListener("click",function(){
-    if(!$("#secret").value) return fail("Enter the admin password.");
-    if(!$("#label").value.trim()) return fail("Add a name so you can tell codes apart.");
+    $("#err").style.display="none";
+    if(!$("#label").value.trim()) return fail("Add a name so you can tell customers apart.");
     var b=$("#create"); b.disabled=true; b.textContent="Creating…";
     call({action:"create",label:$("#label").value.trim(),days:$("#days").value})
       .then(function(d){
@@ -88,28 +162,10 @@
         $("#meta").textContent=d.label+" · valid until "+fmt(d.expires);
         $("#out").style.display="block";
         $("#label").value="";
-        loadList();
+        return load();
       })
       .catch(function(e){ fail((e&&e.error)||"Couldn't create that."); })
       .then(function(){ b.disabled=false; b.textContent="Create code"; });
   });
-
-  function loadList(){
-    call({action:"list"}).then(function(d){
-      $("#listCard").style.display="";
-      $("#rows").innerHTML=(d.codes||[]).map(function(c){
-        return '<tr><td class="c">'+c.code+'</td><td>'+(c.label||'<span class="muted">—</span>')
-          +'</td><td class="muted">'+fmt(c.expires)+(c.expires?'':' <span class="muted">no expiry</span>')
-          +'</td><td style="text-align:right"><button class="danger" data-code="'+c.code+'">Revoke</button></td></tr>';
-      }).join("") || '<tr><td colspan="4" class="muted">No codes yet.</td></tr>';
-      Array.prototype.forEach.call(document.querySelectorAll("#rows .danger"),function(b){
-        b.addEventListener("click",function(){
-          if(!confirm("Revoke "+b.getAttribute("data-code")+"? They lose access immediately.")) return;
-          call({action:"revoke",code:b.getAttribute("data-code")}).then(loadList).catch(function(e){fail((e&&e.error)||"Couldn't revoke.")});
-        });
-      });
-    }).catch(function(e){ fail((e&&e.error)||"Couldn't load codes."); });
-  }
-  $("#refresh").addEventListener("click",loadList);
 </script>
 </body>

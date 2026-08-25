@@ -15,6 +15,7 @@
 import { decryptSecret } from "../_lib/crypto.js";
 import { pullStoreNumbers, resolveToken } from "../_lib/shopify.js";
 import { briefingToText, sendMail } from "../_lib/email.js";
+import { bumpStat } from "../_lib/access.js";
 
 // One invocation's worth of work. Well above any plausible subscriber count
 // right now; the cursor loop below picks up the rest on the next hourly run
@@ -107,6 +108,7 @@ async function handle(context) {
         rec.lastSent = today;
         rec.lastError = null;
         result.sent++;
+        await bumpStat(env, "emails");
       } catch (e) {
         // Record the failure on the subscription so the owner can see why
         // their email didn't arrive, but don't set lastSent — the next

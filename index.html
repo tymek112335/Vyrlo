@@ -548,5 +548,10 @@
   } else { $$(".rv").forEach(function(el){el.classList.add("in");}); }
 })();
 </script>
+<script>
+  // Anonymous page counter for the owner's dashboard: no cookie, no
+  // identifier, nothing stored about the visitor. Fails silently.
+  try{fetch("/api/hit",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({page:"site"}),keepalive:true}).catch(function(){})}catch(e){}
+</script>
 </body>
 </html>

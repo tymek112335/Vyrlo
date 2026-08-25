@@ -1,4 +1,4 @@
-import { isValidCode, checkFreeLimit, profileBlock, codeInfo, getUsage, bumpUsage, PRO_MONTHLY } from "../_lib/access.js";
+import { isValidCode, checkFreeLimit, profileBlock, codeInfo, getUsage, bumpUsage, bumpStat, PRO_MONTHLY } from "../_lib/access.js";
 
 // Cloudflare Pages Function — POST /api/generate
 // Two modes on one endpoint:
@@ -335,6 +335,7 @@ export async function onRequestPost(context) {
     // Counted only once the briefing actually exists, so a failed model call
     // doesn't cost the customer one of their 300.
     if (paidCode) await bumpUsage(env, paidCode);
+    await bumpStat(env, paidCode ? "briefings_paid" : "briefings_free");
     return json(briefing, 200);
   } catch (e) {
     return json({ error: "Something broke generating the briefing.", detail: String(e) }, 500);
