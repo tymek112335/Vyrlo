@@ -1,6 +1,6 @@
 // Cloudflare Pages Function - POST /api/auth
 //
-// signup | login | me | logout
+// signup | login | me | logout | reset-request | reset-confirm
 //
 // The session rides in an HttpOnly cookie rather than localStorage, so a
 // script injected into the page can't read it. Everything the app needs to
@@ -8,6 +8,7 @@
 
 import { normalizeEmail, hashPassword, verifyPassword, makeSession, readSession, getUser, putUser, userIsPro, readCookie } from "../_lib/auth.js";
 import { checkFreeLimit, bumpStat } from "../_lib/access.js";
+import { sendMail } from "../_lib/email.js";
 
 function json(obj, status, cookie) {
   const headers = { "content-type": "application/json" };
@@ -46,7 +47,9 @@ export async function onRequestPost(context) {
 
     const email = normalizeEmail(body.email);
     const password = String(body.password || "");
-    if (!email) return json({ error: "That doesn't look like a valid email address." }, 400);
+    if (!email && action !== "reset-confirm") {
+      return json({ error: "That doesn't look like a valid email address." }, 400);
+    }
 
     if (action === "signup") {
       if (password.length < 8) return json({ error: "Use at least 8 characters." }, 400);
@@ -73,8 +76,55 @@ export async function onRequestPost(context) {
       return json({ ok: true, user: publicUser(user) }, 200, sessionCookie(await makeSession(env, email), 60));
     }
 
+    if (action === "reset-request") {
+      // Always answers the same way. Telling someone whether an address has
+      // an account is the same leak the login response carefully avoids.
+      const generic = { ok: true, sent: true };
+      if (!env.RESEND_API_KEY) return json({ error: "Password resets aren't set up yet." }, 503);
+      if (!(await checkFreeLimit(env, request, "resetreq", 5))) return json(generic, 200);
+
+      const user = await getUser(env, email);
+      if (user) {
+        const token = crypto.randomUUID().replace(/-/g, "");
+        // One hour, one use. Stored against the email rather than the user
+        // record so it can't outlive itself if a write fails.
+        await env.VYRLO_KV.put("reset:" + token, email, { expirationTtl: 3600 });
+        const origin = new URL(request.url).origin;
+        await sendMail(
+          env,
+          email,
+          "Reset your Vyrlo password",
+          "Someone asked to reset the password for this Vyrlo account.\n\n" +
+          "Set a new one here (the link works for one hour, once):\n" +
+          origin + "/app?reset=" + token + "\n\n" +
+          "If that wasn't you, ignore this — nothing has changed.\n\nVyrlo · vyrlo.cc"
+        ).catch(() => {});
+      }
+      return json(generic, 200);
+    }
+
+    if (action === "reset-confirm") {
+      const token = String(body.token || "").trim();
+      if (!/^[0-9a-f]{32}$/.test(token)) return json({ error: "That reset link isn't valid." }, 400);
+      if (password.length < 8) return json({ error: "Use at least 8 characters." }, 400);
+
+      const key = "reset:" + token;
+      const owner = await env.VYRLO_KV.get(key);
+      if (!owner) return json({ error: "That reset link has expired or been used. Ask for a new one." }, 400);
+      await env.VYRLO_KV.delete(key);
+
+      const user = await getUser(env, owner);
+      if (!user) return json({ error: "That account no longer exists." }, 400);
+      const fresh = await hashPassword(password);
+      user.salt = fresh.salt; user.hash = fresh.hash;
+      await putUser(env, user);
+      return json({ ok: true, user: publicUser(user) }, 200, sessionCookie(await makeSession(env, owner), 60));
+    }
+
     return json({ error: "Unknown action." }, 400);
   } catch (e) {
-    return json({ error: "Something broke.", detail: String(e).slice(0, 200) }, 500);
+    // Say what actually failed. The previous message told the owner nothing
+    // and told the user less.
+    return json({ error: "Accounts hit an error: " + String(e && e.message || e).slice(0, 160) }, 500);
   }
 }

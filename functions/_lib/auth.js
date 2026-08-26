@@ -16,7 +16,9 @@
 
 const enc = new TextEncoder();
 
-const PBKDF2_ITERATIONS = 150000;
+// Cloudflare refuses PBKDF2 above 100,000 iterations outright — it throws
+// rather than running slowly — so this is the ceiling, not a preference.
+const PBKDF2_ITERATIONS = 100000;
 const SESSION_DAYS = 60;
 
 function b64(bytes) {

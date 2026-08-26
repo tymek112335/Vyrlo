@@ -82,6 +82,14 @@
   .usage-bar{flex:1;background:var(--accent-weak);border-radius:3px 3px 0 0;min-height:3px;position:relative}
   .usage-bar.on{background:var(--accent)}
   .usage-x{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3)}
+  .pw-wrap{position:relative;display:flex}
+  .pw-wrap input{width:100%;padding-right:44px}
+  .pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;padding:6px;
+    cursor:pointer;color:var(--ink-3);display:grid;place-items:center;border-radius:8px}
+  .pw-eye:hover{color:var(--ink-2);background:var(--surface-2)}
+  .pw-eye svg{width:18px;height:18px}
+  .pw-eye[aria-pressed="true"]{color:var(--accent)}
+  .gate-ok{font-size:13px;color:var(--good);margin-top:10px;line-height:1.5}
   .auth-note{font-size:13px;color:var(--ink-2);line-height:1.5;margin:0 0 16px}
   .access-note{background:var(--warn-weak);color:var(--warn);border:1px solid var(--warn);border-radius:12px;
     padding:11px 15px;font-size:13.5px;font-weight:560;margin-bottom:18px}
@@ -999,10 +1007,17 @@ Deep Sleep stock: 41 units left."></textarea>
       <p class="auth-note" id="auth-note">Your briefings stay in this browser either way — an account just carries your plan.</p>
       <div class="gate-code" style="flex-direction:column;gap:9px">
         <input id="auth-email" type="email" placeholder="you@yourstore.com" autocomplete="email">
-        <input id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
+        <div class="pw-wrap">
+          <input id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
+          <button class="pw-eye" id="auth-eye" type="button" aria-label="Show password" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
         <button class="btn primary" id="auth-go" style="width:100%">Log in</button>
       </div>
       <div class="gate-err" id="auth-err"></div>
+      <div class="gate-ok" id="auth-ok" hidden></div>
+      <button class="gate-skip" id="auth-forgot">Forgot your password?</button>
       <button class="gate-skip" id="auth-swap">No account yet? Sign up →</button>
     </div>
   </div>
@@ -2481,27 +2496,74 @@ Deep Sleep stock: 41 units left."></textarea>
       .catch(function(){});
   }
 
+  var resetToken="";
   function showAuth(mode){
     authMode=mode||"login";
-    var signup=authMode==="signup";
-    $("#auth-title").textContent=signup?"Create your account":"Log in";
-    $("#auth-go").textContent=signup?"Create account":"Log in";
+    var signup=authMode==="signup", forgot=authMode==="forgot", setnew=authMode==="setnew";
+    $("#auth-title").textContent=setnew?"Choose a new password":forgot?"Reset your password":signup?"Create your account":"Log in";
+    $("#auth-go").textContent=setnew?"Save and log in":forgot?"Email me a link":signup?"Create account":"Log in";
+    $("#auth-note").textContent=forgot
+      ? "Put in the email you signed up with and we'll send a link. It works once, for an hour."
+      : "Your briefings stay in this browser either way — an account just carries your plan.";
+    // Forgot needs only an email; setting a new one needs only a password.
+    $("#auth-email").parentNode.style.display="";
+    $("#auth-email").style.display=setnew?"none":"";
+    $(".pw-wrap").style.display=forgot?"none":"";
+    $("#auth-forgot").hidden=!(authMode==="login");
+    $("#auth-swap").hidden=forgot||setnew;
     $("#auth-swap").textContent=signup?"Already have an account? Log in →":"No account yet? Sign up →";
-    $("#auth-pass").setAttribute("autocomplete",signup?"new-password":"current-password");
-    $("#auth-pass").placeholder=signup?"Password — at least 8 characters":"Password";
-    $("#auth-err").textContent="";
+    $("#auth-pass").setAttribute("autocomplete",(signup||setnew)?"new-password":"current-password");
+    $("#auth-pass").placeholder=(signup||setnew)?"Password — at least 8 characters":"Password";
+    $("#auth-err").textContent=""; $("#auth-ok").hidden=true;
+    setEye(false);
     $("#auth").classList.add("on");
-    setTimeout(function(){$("#auth-email").focus()},50);
+    setTimeout(function(){ (setnew?$("#auth-pass"):$("#auth-email")).focus(); },50);
+  }
+  function setEye(show){
+    var i=$("#auth-pass"), b=$("#auth-eye");
+    i.type=show?"text":"password";
+    b.setAttribute("aria-pressed",show?"true":"false");
+    b.setAttribute("aria-label",show?"Hide password":"Show password");
   }
   function hideAuth(){ $("#auth").classList.remove("on"); }
 
   function submitAuth(){
     var email=$("#auth-email").value.trim(), pass=$("#auth-pass").value;
-    var err=$("#auth-err");
+    var err=$("#auth-err"); err.textContent=""; $("#auth-ok").hidden=true;
+    var btn=$("#auth-go"), label=btn.textContent;
+
+    if(authMode==="forgot"){
+      if(!email){ err.textContent="Which email?"; return; }
+      btn.disabled=true; btn.textContent="…";
+      fetch("/api/auth",{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({action:"reset-request",email:email})})
+        .then(function(r){return r.json().then(function(j){return r.ok?j:Promise.reject(j)})})
+        // Deliberately the same answer whether or not that account exists.
+        .then(function(){ $("#auth-ok").hidden=false; $("#auth-ok").textContent="If there's an account for "+email+", a reset link is on its way. Check your spam folder too."; })
+        .catch(function(e){ err.textContent=(e&&e.error)||"Couldn't send that."; })
+        .then(function(){ btn.disabled=false; btn.textContent=label; });
+      return;
+    }
+
+    if(authMode==="setnew"){
+      if(pass.length<8){ err.textContent="Use at least 8 characters."; return; }
+      btn.disabled=true; btn.textContent="…";
+      fetch("/api/auth",{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({action:"reset-confirm",token:resetToken,password:pass})})
+        .then(function(r){return r.json().then(function(j){return r.ok?j:Promise.reject(j)})})
+        .then(function(d){
+          account=d.user; resetToken=""; hideAuth(); renderAccount(); $("#auth-pass").value="";
+          if(account.pro){ accessCode="account"; loadUsage(); }
+          renderMeter(); renderHome(); toast("Password changed — you're logged in.");
+        })
+        .catch(function(e){ err.textContent=(e&&e.error)||"Couldn't set that password."; })
+        .then(function(){ btn.disabled=false; btn.textContent=label; });
+      return;
+    }
+
     if(!email||!pass){ err.textContent="Fill both fields."; return; }
     if(authMode==="signup"&&pass.length<8){ err.textContent="Use at least 8 characters."; return; }
-    var btn=$("#auth-go"), label=btn.textContent;
-    btn.disabled=true; btn.textContent="…"; err.textContent="";
+    btn.disabled=true; btn.textContent="…";
     fetch("/api/auth",{method:"POST",headers:{"content-type":"application/json"},
       body:JSON.stringify({action:authMode,email:email,password:pass})})
       .then(function(r){return r.json().then(function(j){return r.ok?j:Promise.reject(j)})})
@@ -2715,6 +2777,8 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#auth-x").addEventListener("click",hideAuth);
   $("#auth-go").addEventListener("click",submitAuth);
   $("#auth-swap").addEventListener("click",function(){ showAuth(authMode==="login"?"signup":"login"); });
+  $("#auth-forgot").addEventListener("click",function(){ showAuth("forgot"); });
+  $("#auth-eye").addEventListener("click",function(){ setEye($("#auth-pass").type==="password"); });
   $("#auth-pass").addEventListener("keydown",function(e){ if(e.key==="Enter") submitAuth(); });
   $("#auth-email").addEventListener("keydown",function(e){ if(e.key==="Enter") $("#auth-pass").focus(); });
   $("#nav-unlock").addEventListener("click",showGate);
@@ -2754,6 +2818,13 @@ Deep Sleep stock: 41 units left."></textarea>
   loadAccount();
   if(/[?&]login=1/.test(window.location.search)) showAuth('login');
   if(/[?&]signup=1/.test(window.location.search)) showAuth('signup');
+  (function(){
+    var m=/[?&]reset=([0-9a-f]{32})/.exec(window.location.search);
+    if(!m) return;
+    resetToken=m[1];
+    history.replaceState({},"","/app");   // don't leave the token in history
+    showAuth('setnew');
+  })();
   // Load last briefing as context (for the consultant) but stay on the dashboard.
   (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; currentBriefing=last.briefing; } }catch(e){} })();
   checkPaidSession();
