@@ -1,4 +1,5 @@
 import { isValidCode, checkFreeLimit, profileBlock, codeInfo, getUsage, bumpUsage, bumpStat, PRO_MONTHLY } from "../_lib/access.js";
+import { proFromSession } from "../_lib/auth.js";
 
 // Cloudflare Pages Function — POST /api/generate
 // Two modes on one endpoint:
@@ -204,12 +205,13 @@ export async function onRequestPost(context) {
     // A correct code unlocks unlimited use. The free-try limit itself is
     // enforced below, server-side, via checkFreeLimit.
     if (reqBody.mode === "verify") {
-      const ok = await isValidCode(env, reqBody.accessCode);
+      const sess = await proFromSession(env, request);
+      const ok = (await isValidCode(env, reqBody.accessCode)) || !!(sess && sess.pro);
       // Hand back the expiry too. An invoiced code stops working on its own,
       // and finding that out by being silently dropped to the free plan
       // mid-week is a bad way to learn it.
       const info = ok ? await codeInfo(env, reqBody.accessCode) : null;
-      return json({ ok, expires: (info && info.expires) || null }, 200);
+      return json({ ok, expires: (info && info.expires) || (sess && sess.expires) || null }, 200);
     }
 
     if (!env.ANTHROPIC_API_KEY) return json({ error: "Server is missing its API key." }, 500);
@@ -217,7 +219,19 @@ export async function onRequestPost(context) {
     // ---- Free-tier rate limit (server-side backstop) -----------------------
     // Covers ask/compare/briefing alike — all three call the model. A valid
     // access code skips this entirely.
-    const paidCode = (await isValidCode(env, reqBody.accessCode)) ? String(reqBody.accessCode || "").trim() : null;
+    // Two ways to be entitled: a pasted code, or a logged-in account with Pro.
+    // Both are metered against the same monthly ceiling, keyed by whichever
+    // identified them.
+    // The nightly job calls this endpoint for subscribers who may have no
+    // access code at all. It presents CRON_SECRET, which never leaves the
+    // server, and names the id its briefing should be metered against.
+    const internal = !!(env.CRON_SECRET && request.headers.get("x-vyrlo-internal") === env.CRON_SECRET);
+    const session = internal ? null : await proFromSession(env, request);
+    const paidCode = internal
+      ? String(reqBody.usageId || "").trim() || null
+      : (await isValidCode(env, reqBody.accessCode))
+        ? String(reqBody.accessCode || "").trim()
+        : (session && session.pro ? "u:" + session.email : null);
     if (!paidCode) {
       // Free is one briefing a week. Ask/compare ride the same allowance —
       // they're follow-ups on a briefing that allowance already paid for.

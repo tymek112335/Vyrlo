@@ -4,6 +4,7 @@
 // cap; an access code lifts the cap.
 
 import { isValidCode, checkFreeLimit, profileBlock, bumpStat } from "../_lib/access.js";
+import { proFromSession } from "../_lib/auth.js";
 
 const CONSULTANT_SYSTEM = `You are Vyrlo's business consultant for the owner of a small e-commerce store. You talk like a sharp, blunt operator who has seen a lot of small stores: practical, numbers-first, no fluff, no corporate hedging.
 
@@ -27,7 +28,8 @@ export async function onRequestPost(context) {
     // — an analyst that says "your data can't tell me that" — so it's open
     // without a code. Every turn is still a real model call, so free use is
     // capped per IP per day rather than unlimited.
-    if (!(await isValidCode(env, body.accessCode))) {
+    const chatSession = await proFromSession(env, context.request);
+    if (!(await isValidCode(env, body.accessCode)) && !(chatSession && chatSession.pro)) {
       if (!(await checkFreeLimit(env, context.request, "chat", 10))) {
         return json({ error: "That's today's free consultant messages used up. Enter your access code or subscribe for unlimited chat." }, 429);
       }

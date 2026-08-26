@@ -47,14 +47,18 @@ async function runOne(env, origin, code, rec) {
   if (!token) throw new Error("No usable Shopify credentials on this subscription.");
   const pulled = await pullStoreNumbers(rec.shop, token);
 
+  // The subscriber may be an account rather than a code-holder, in which case
+  // there is no access code to present. The job proves itself with the same
+  // secret it was called with, and says which id to meter against.
   const gen = await fetch(`${origin}/api/generate`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", "x-vyrlo-internal": env.CRON_SECRET },
     body: JSON.stringify({
       rawText: pulled.raw,
       period: pulled.period,
       profile: rec.profile || undefined,
-      accessCode: code
+      accessCode: code.indexOf("u:") === 0 ? "" : code,
+      usageId: code
     })
   });
   if (!gen.ok) throw new Error("generate " + gen.status + ": " + (await gen.text()).slice(0, 200));

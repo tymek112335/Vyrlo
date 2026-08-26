@@ -12,6 +12,7 @@
 // Actions: {action:"get"|"save"|"delete"}
 
 import { isValidCode } from "../_lib/access.js";
+import { proFromSession } from "../_lib/auth.js";
 import { encryptSecret } from "../_lib/crypto.js";
 import { normalizeShop, testConnection, resolveToken } from "../_lib/shopify.js";
 
@@ -39,14 +40,20 @@ export async function onRequestPost(context) {
     const body = await request.json().catch(() => ({}));
     const code = String(body.accessCode || "").trim();
 
-    if (!(await isValidCode(env, code))) {
-      return json({ error: "The daily email is part of a paid plan — enter your access code to switch it on." }, 403);
+    const session = await proFromSession(env, request);
+    const entitled = (await isValidCode(env, code)) || !!(session && session.pro);
+    if (!entitled) {
+      return json({ error: "The daily email is part of a paid plan — log in or enter your access code to switch it on." }, 403);
     }
     if (!env.VYRLO_KV) {
       return json({ error: "Daily email isn't switched on for this account yet." }, 503);
     }
 
-    const key = "daily:" + code;
+    // Code-holders key on the code, account-holders on the account. An empty
+    // code would otherwise put every account user on the same record.
+    const subId = code || (session && session.email ? "u:" + session.email : "");
+    if (!subId) return json({ error: "Log in or enter your access code first." }, 403);
+    const key = "daily:" + subId;
 
     if (body.action === "get") {
       const raw = await env.VYRLO_KV.get(key);

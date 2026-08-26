@@ -82,6 +82,7 @@
   .usage-bar{flex:1;background:var(--accent-weak);border-radius:3px 3px 0 0;min-height:3px;position:relative}
   .usage-bar.on{background:var(--accent)}
   .usage-x{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3)}
+  .auth-note{font-size:13px;color:var(--ink-2);line-height:1.5;margin:0 0 16px}
   .access-note{background:var(--warn-weak);color:var(--warn);border:1px solid var(--warn);border-radius:12px;
     padding:11px 15px;font-size:13.5px;font-weight:560;margin-bottom:18px}
   .access-note.soon{background:var(--bad-weak);color:var(--bad);border-color:var(--bad)}
@@ -615,6 +616,10 @@
           <div class="meter-top"><span id="meter-label">Briefings</span><span id="meter-count"></span></div>
           <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
         </button>
+        <button class="nav-item" id="nav-account">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+          <span class="nav-label">Log in</span> <span class="ready-pill" id="account-pill" hidden></span>
+        </button>
         <button class="nav-item" id="nav-unlock">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
           Access code
@@ -970,11 +975,9 @@ Deep Sleep stock: 41 units left."></textarea>
     <div class="gate-card">
       <button class="gate-x" id="gate-close" aria-label="Close">✕</button>
       <div class="gate-brand">Vyrlo</div>
-      <h2 id="gate-title">Unlimited briefings</h2>
-      <p id="gate-sub">Every feature is free. Pro raises the limit to 300 a month.</p>
-      <div id="gate-free">
+      <h2 id="gate-title">Enter your access code</h2>
+      <div id="gate-free" hidden>
         <button class="btn primary" id="gate-try">Use a free briefing →</button>
-        <div class="gate-or">— or enter a code —</div>
       </div>
       <div class="gate-code">
         <input id="gate-input" type="password" placeholder="Access code" autocomplete="off">
@@ -984,6 +987,23 @@ Deep Sleep stock: 41 units left."></textarea>
       <div class="gate-or">— or —</div>
       <a class="btn" id="gate-subscribe" href="mailto:hello@vyrlo.cc?subject=Vyrlo%20Pro%20-%20founding%20customer" style="text-decoration:none">Get Pro — $29/mo →</a>
       <button class="gate-skip" id="gate-dash">Go to your dashboard →</button>
+    </div>
+  </div>
+
+  <!-- ACCOUNT -->
+  <div class="gate" id="auth">
+    <div class="gate-card">
+      <button class="gate-x" id="auth-x" aria-label="Close">✕</button>
+      <div class="gate-brand">Vyrlo</div>
+      <h2 id="auth-title">Log in</h2>
+      <p class="auth-note" id="auth-note">Your briefings stay in this browser either way — an account just carries your plan.</p>
+      <div class="gate-code" style="flex-direction:column;gap:9px">
+        <input id="auth-email" type="email" placeholder="you@yourstore.com" autocomplete="email">
+        <input id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
+        <button class="btn primary" id="auth-go" style="width:100%">Log in</button>
+      </div>
+      <div class="gate-err" id="auth-err"></div>
+      <button class="gate-skip" id="auth-swap">No account yet? Sign up →</button>
     </div>
   </div>
 
@@ -2409,12 +2429,10 @@ Deep Sleep stock: 41 units left."></textarea>
   var currentBriefing=null;
   function showGate(){
     var used=freeUsed();
-    $("#gate-free").style.display=used?"none":"";
-    var left=freeLeft(), allow=freeAllowance();
-    $("#gate-title").textContent=used?"That's this week's free briefings":"Unlimited briefings";
-    $("#gate-sub").textContent=used
-      ? "Your allowance resets Monday. Pro is 300 a month, plus a briefing emailed to you every morning."
-      : "Every feature is free. You have "+left+" of "+allow+" briefings left this week — Pro is 300 a month and emails you one each morning.";
+    // Opened deliberately from the sidebar, this is a code box and nothing
+    // else. It only offers a free briefing when there is one left to offer.
+    $("#gate-free").hidden=used;
+    $("#gate-title").textContent=used?"That's this week's free briefings":"Enter your access code";
     $("#gate-err").textContent="";$("#gate-input").value="";
     $("#gate").classList.add("on");
   }
@@ -2433,6 +2451,78 @@ Deep Sleep stock: 41 units left."></textarea>
       .then(function(r){return r.json()})
       .then(function(d){ if(d&&d.ok){ unlockWith(code,d.expires); } else { $("#gate-err").textContent="That code isn't right."; } })
       .catch(function(){ $("#gate-err").textContent="Couldn't check the code — try again."; });
+  }
+
+  /* ---------- account ----------
+     An account carries the plan and nothing else: briefings never leave this
+     browser, which is what lets the site keep saying so. The session is an
+     HttpOnly cookie, so none of this is readable from here — the server is
+     asked who you are rather than told. */
+  var account=null, authMode="login";
+
+  function renderAccount(){
+    var btn=$("#nav-account"); if(!btn) return;
+    btn.querySelector(".nav-label").textContent = account ? account.email.split("@")[0] : "Log in";
+    var pill=$("#account-pill");
+    if(pill){ pill.hidden=!(account&&account.pro); pill.textContent="Pro"; }
+  }
+
+  function loadAccount(){
+    return fetch("/api/auth",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"me"})})
+      .then(function(r){return r.json()})
+      .then(function(d){
+        account=(d&&d.user)||null;
+        renderAccount();
+        // A Pro account entitles the same things a code does, so the rest of
+        // the app can stop caring which one it was.
+        if(account&&account.pro&&!accessCode){ accessCode="account"; loadUsage(); }
+        renderMeter();
+      })
+      .catch(function(){});
+  }
+
+  function showAuth(mode){
+    authMode=mode||"login";
+    var signup=authMode==="signup";
+    $("#auth-title").textContent=signup?"Create your account":"Log in";
+    $("#auth-go").textContent=signup?"Create account":"Log in";
+    $("#auth-swap").textContent=signup?"Already have an account? Log in →":"No account yet? Sign up →";
+    $("#auth-pass").setAttribute("autocomplete",signup?"new-password":"current-password");
+    $("#auth-pass").placeholder=signup?"Password — at least 8 characters":"Password";
+    $("#auth-err").textContent="";
+    $("#auth").classList.add("on");
+    setTimeout(function(){$("#auth-email").focus()},50);
+  }
+  function hideAuth(){ $("#auth").classList.remove("on"); }
+
+  function submitAuth(){
+    var email=$("#auth-email").value.trim(), pass=$("#auth-pass").value;
+    var err=$("#auth-err");
+    if(!email||!pass){ err.textContent="Fill both fields."; return; }
+    if(authMode==="signup"&&pass.length<8){ err.textContent="Use at least 8 characters."; return; }
+    var btn=$("#auth-go"), label=btn.textContent;
+    btn.disabled=true; btn.textContent="…"; err.textContent="";
+    fetch("/api/auth",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({action:authMode,email:email,password:pass})})
+      .then(function(r){return r.json().then(function(j){return r.ok?j:Promise.reject(j)})})
+      .then(function(d){
+        account=d.user; hideAuth(); renderAccount();
+        $("#auth-pass").value="";
+        if(account.pro){ accessCode="account"; loadUsage(); toast("Logged in — Pro is active."); }
+        else { toast("Logged in."); }
+        renderMeter(); renderHome();
+      })
+      .catch(function(e){ err.textContent=(e&&e.error)||"Couldn't do that."; })
+      .then(function(){ btn.disabled=false; btn.textContent=label; });
+  }
+
+  function logout(){
+    fetch("/api/auth",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"logout"})})
+      .then(function(){
+        account=null;
+        if(accessCode==="account"){ accessCode=""; try{localStorage.removeItem("vyrlo.access")}catch(e){} }
+        usageCache=null; renderAccount(); renderMeter(); renderHome(); toast("Logged out.");
+      });
   }
 
   /* ---------- usage meter ----------
@@ -2510,7 +2600,6 @@ Deep Sleep stock: 41 units left."></textarea>
       +'<div class="usage-x"><span>1 '+monthName(mo)+'</span><span>'+daysInMonth+' '+monthName(mo)+'</span></div>'
       +'</div>'
       +'<div class="card"><div class="sec-h">Need more?</div>'
-      +'<p class="note">300 a month is about ten a day — well past what most owners read. If you are genuinely running out, that is worth a conversation rather than a bigger number: email me and I will top you up while we work out what you are using them for.</p>'
       +'<a class="btn" href="mailto:hello@vyrlo.cc?subject=Vyrlo%20-%20more%20briefings" style="text-decoration:none">Email hello@vyrlo.cc</a>'
       +(u.lastMonthTotal?'<p class="note" style="margin-top:14px">Last month you used '+u.lastMonthTotal+'.</p>':'')
       +'</div>';
@@ -2622,6 +2711,12 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#sb-home").addEventListener("click",function(e){e.preventDefault();showView("home")});
   $("#theme-toggle").addEventListener("click",function(){applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark")});
   $("#meter").addEventListener("click",function(){showView("usage")});
+  $("#nav-account").addEventListener("click",function(){ account?logout():showAuth("login"); });
+  $("#auth-x").addEventListener("click",hideAuth);
+  $("#auth-go").addEventListener("click",submitAuth);
+  $("#auth-swap").addEventListener("click",function(){ showAuth(authMode==="login"?"signup":"login"); });
+  $("#auth-pass").addEventListener("keydown",function(e){ if(e.key==="Enter") submitAuth(); });
+  $("#auth-email").addEventListener("keydown",function(e){ if(e.key==="Enter") $("#auth-pass").focus(); });
   $("#nav-unlock").addEventListener("click",showGate);
   $("#gate-try").addEventListener("click",function(){hideGate();showView("home")});
   $("#gate-unlock").addEventListener("click",verifyCode);
@@ -2656,6 +2751,9 @@ Deep Sleep stock: 41 units left."></textarea>
   renderHome();
   renderAccessNote();
   loadUsage();
+  loadAccount();
+  if(/[?&]login=1/.test(window.location.search)) showAuth('login');
+  if(/[?&]signup=1/.test(window.location.search)) showAuth('signup');
   // Load last briefing as context (for the consultant) but stay on the dashboard.
   (function(){ try{ var last=JSON.parse(localStorage.getItem("vyrlo.last")); if(last&&last.briefing){ lastRaw=last.raw||""; currentBriefing=last.briefing; } }catch(e){} })();
   checkPaidSession();

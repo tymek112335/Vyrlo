@@ -243,7 +243,7 @@
         <a href="#faq">FAQ</a>
       </div>
       <div class="nav-cta">
-        <button class="btn ghost sm" id="login-soon">Log in</button>
+        <a class="btn ghost sm" href="/app.html?login=1" style="text-decoration:none">Log in</a>
         <a class="btn primary sm" href="/app.html">Try free</a>
         <button class="hamb" id="hamb" aria-label="Open menu" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       </div>
@@ -531,9 +531,6 @@
   // toast + plan buttons (honest: no checkout wired yet)
   var toast=$("#toast"), tt=null;
   function showToast(msg){ toast.textContent=msg; toast.classList.add("on"); clearTimeout(tt); tt=setTimeout(function(){toast.classList.remove("on");},4200); }
-  var loginSoon=$("#login-soon");
-  if(loginSoon) loginSoon.addEventListener("click",function(){ showToast("Customer accounts are coming soon — try it free for now."); });
-
   // Stripe checkout isn't wired up yet, so the Pro button is a mailto and
   // nothing carries data-plan. Left in place for when it is: the endpoint,
   // the webhook and the code issuing all still exist.

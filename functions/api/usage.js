@@ -5,6 +5,7 @@
 // briefing a week needs no server round trip to display.
 
 import { isValidCode, getUsage, codeInfo, PRO_MONTHLY } from "../_lib/access.js";
+import { proFromSession } from "../_lib/auth.js";
 
 function json(obj, status) {
   return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
@@ -14,8 +15,12 @@ export async function onRequestPost(context) {
   const { env } = context;
   try {
     const body = await context.request.json().catch(() => ({}));
-    const code = String(body.accessCode || "").trim();
-    if (!(await isValidCode(env, code))) return json({ error: "No access code." }, 403);
+    let code = String(body.accessCode || "").trim();
+    if (!(await isValidCode(env, code))) {
+      const session = await proFromSession(env, context.request);
+      if (!(session && session.pro)) return json({ error: "Not a Pro account." }, 403);
+      code = "u:" + session.email;
+    }
 
     const now = new Date();
     const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
