@@ -71,7 +71,10 @@ export async function onRequestPost(context) {
       const user = await getUser(env, email);
       // Same message and roughly the same work either way, so this can't be
       // used to find out which email addresses have accounts.
-      const ok = user ? await verifyPassword(password, user.salt, user.hash) : false;
+      // A Google-only account has no stored hash. Attempting to derive
+      // against a null salt throws, which the catch-all would turn into a
+      // 500 on an ordinary wrong-account mistake.
+      const ok = user && user.hash ? await verifyPassword(password, user.salt, user.hash) : false;
       if (!ok) return json({ error: "That email and password don't match." }, 401);
       return json({ ok: true, user: publicUser(user) }, 200, sessionCookie(await makeSession(env, email), 60));
     }
