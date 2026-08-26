@@ -156,11 +156,9 @@
   .toggle button.on .save{color:#8ff0c3}
   .plans{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:40px;align-items:stretch;max-width:720px;margin-left:auto;margin-right:auto}
   .plan{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px 26px;display:flex;flex-direction:column;box-shadow:var(--shadow-sm)}
-  .founding{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
-  .founding b{display:block;font-size:13px;font-weight:640;margin-bottom:5px}
-  .founding p{font-size:13px;color:var(--ink-2);line-height:1.55;margin:0 0 8px}
-  .founding a{font-size:13px;font-weight:600;color:var(--accent);text-decoration:none}
-  .founding a:hover{text-decoration:underline}
+  .demo-frame{max-width:920px;margin:40px auto 0;border:1px solid var(--line);border-radius:var(--r);
+    overflow:hidden;background:var(--surface);box-shadow:var(--shadow);line-height:0}
+  .demo-frame video{width:100%;height:auto;display:block;background:var(--surface-2)}
   .plan.pop{border-color:var(--accent);box-shadow:var(--shadow);position:relative}
   .plan.pop:before{content:"Most popular";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:11.5px;font-weight:640;padding:4px 12px;border-radius:16px;white-space:nowrap}
   .plan .pn{font-size:15px;font-weight:660}
@@ -240,6 +238,7 @@
       <div class="nav-links">
         <a href="#how">How it works</a>
         <a href="#features">Features</a>
+        <a href="#demo">Demo</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
       </div>
@@ -252,6 +251,7 @@
     <div class="mobile-menu" id="mobileMenu">
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
+      <a href="#demo">Demo</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
       <a href="/app.html" style="color:var(--accent);font-weight:640">Try it free →</a>
@@ -370,6 +370,21 @@
       </div>
     </section>
 
+    <!-- DEMO -->
+    <section class="blk" id="demo" style="padding-top:0">
+      <div class="wrap" style="text-align:center">
+        <div class="eyebrow">See it work</div>
+        <h2 class="h2">Fifty-five seconds, start to finish</h2>
+        <p class="lead">A real store's numbers going in, and a briefing coming out — plus the trend history, the side-by-side, and the actions that carry over. No slides, just the product.</p>
+        <div class="demo-frame rv">
+          <video id="demo-video" controls preload="none" playsinline poster="/demo-poster.jpg" width="1920" height="1080">
+            <source src="/vyrlo-demo.mp4" type="video/mp4">
+            Your browser can't play this video. <a href="/vyrlo-demo.mp4">Download it instead</a>.
+          </video>
+        </div>
+      </div>
+    </section>
+
     <!-- PRICING -->
     <section class="blk" id="pricing" style="padding-top:0">
       <div class="wrap" style="text-align:center">
@@ -405,11 +420,6 @@
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Unlimited consultant chat</li>
               <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Everything in Free</li>
             </ul>
-            <div class="founding">
-              <b>Founding customers</b>
-              <p>Vyrlo is new, so the first 20 are set up by hand. Email me and you get an invoice, then a code — and me on the other end of any question you have about your numbers.</p>
-              <a href="mailto:hello@vyrlo.cc?subject=Vyrlo%20Pro%20-%20founding%20customer">hello@vyrlo.cc →</a>
-            </div>
           </div>
         </div>
       </div>
