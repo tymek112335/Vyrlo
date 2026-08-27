@@ -2481,7 +2481,7 @@ Deep Sleep stock: 41 units left."></textarea>
      browser, which is what lets the site keep saying so. The session is an
      HttpOnly cookie, so none of this is readable from here — the server is
      asked who you are rather than told. */
-  var account=null, authMode="login";
+  var account=null, authMode="login", authFromLanding=false;
 
   function renderAccount(){
     var btn=$("#nav-account"); if(!btn) return;
@@ -2538,6 +2538,16 @@ Deep Sleep stock: 41 units left."></textarea>
     b.setAttribute("aria-label",show?"Hide password":"Show password");
   }
   function hideAuth(){ $("#auth").classList.remove("on"); }
+  // The X is a deliberate cancel, not "back to whatever's behind it". When
+  // the modal opened itself — a ?signup=1/?login=1/?reset= link off the
+  // marketing site or an email — there is nothing behind it worth landing
+  // on, so closing goes back to the site instead of dumping the visitor into
+  // a live dashboard they never asked to see. Opened from inside the app
+  // (the sidebar's Log in), it's a normal close.
+  function dismissAuth(){
+    if(authFromLanding){ window.location.href="/"; return; }
+    hideAuth();
+  }
 
   function submitAuth(){
     var email=$("#auth-email").value.trim(), pass=$("#auth-pass").value;
@@ -2786,7 +2796,7 @@ Deep Sleep stock: 41 units left."></textarea>
   $("#theme-toggle").addEventListener("click",function(){applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark")});
   $("#meter").addEventListener("click",function(){showView("usage")});
   $("#nav-account").addEventListener("click",function(){ account?logout():showAuth("login"); });
-  $("#auth-x").addEventListener("click",hideAuth);
+  $("#auth-x").addEventListener("click",dismissAuth);
   $("#auth-go").addEventListener("click",submitAuth);
   $("#auth-swap").addEventListener("click",function(){ showAuth(authMode==="login"?"signup":"login"); });
   $("#auth-forgot").addEventListener("click",function(){ showAuth("forgot"); });
@@ -2828,12 +2838,13 @@ Deep Sleep stock: 41 units left."></textarea>
   renderAccessNote();
   loadUsage();
   loadAccount();
-  if(/[?&]login=1/.test(window.location.search)) showAuth('login');
-  if(/[?&]signup=1/.test(window.location.search)) showAuth('signup');
+  if(/[?&]login=1/.test(window.location.search)){ authFromLanding=true; showAuth('login'); }
+  if(/[?&]signup=1/.test(window.location.search)){ authFromLanding=true; showAuth('signup'); }
   (function(){
     var m=/[?&]reset=([0-9a-f]{32})/.exec(window.location.search);
     if(!m) return;
     resetToken=m[1];
+    authFromLanding=true;
     history.replaceState({},"","/app");   // don't leave the token in history
     showAuth('setnew');
   })();
